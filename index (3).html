@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BBX Arena preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #eef0f6; --surface: #ffffff; --ink: #16183a; --muted: #5c6080; --line: #d5d8e6;
+  --signal: #2944f0; --sub: #c8176b; --win: #13795b; --loss: #b42318; --wave-rest: #9ea3c0;
+  --on-ink: #eef0f6;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #13152b; --surface: #1c1f3a; --ink: #e8e9f6; --muted: #9a9ec0; --line: #2e3256;
+    --signal: #8ea0ff; --sub: #ff5ca6; --win: #4cc79a; --loss: #ff8a7a; --wave-rest: #4a4f78;
+    --on-ink: #13152b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #13152b; --surface: #1c1f3a; --ink: #e8e9f6; --muted: #9a9ec0; --line: #2e3256;
+  --signal: #8ea0ff; --sub: #ff5ca6; --win: #4cc79a; --loss: #ff8a7a; --wave-rest: #4a4f78;
+  --on-ink: #13152b;
+  color-scheme: dark;
+}
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 4rem); }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--paper);
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+img, canvas { max-width: 100%; }
+p { margin: 0; }
+h1, h2, h3 { margin: 0; font-weight: inherit; }
+
+.handle { font-stretch: 125%; font-weight: 760; letter-spacing: -0.015em; }
+.num { font-stretch: 78%; font-weight: 620; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 0.875rem; }
+.wrap { max-width: 72rem; margin: 0 auto; padding: 0 1.25rem; }
+.stack { display: grid; gap: 1rem; }
+
+/* Header */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9;
+  background: var(--paper); border-bottom: 1px solid var(--line);
+}
+.top .wrap { display: flex; align-items: center; gap: 1.5rem; height: 3.75rem; }
+.brand { font-stretch: 125%; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; white-space: nowrap; }
+.brand span { color: var(--sub); }
+.nav { display: flex; gap: 0.25rem; }
+.nav button {
+  border: 0; background: transparent; padding: 0.4rem 0.85rem; border-radius: 999px; color: var(--muted);
+}
+.nav button[aria-current="page"] { background: var(--ink); color: var(--on-ink); }
+.top .note { margin-left: auto; font-size: 0.8rem; color: var(--muted); text-align: right; }
+@media (max-width: 640px) { .top .note { display: none; } .top .wrap { gap: 0.75rem; } }
+
+#app { padding-top: 2rem; padding-bottom: 4rem; }
+
+/* Buttons */
+.btn { border: 0; border-radius: 999px; background: var(--ink); color: var(--on-ink); padding: 0.65rem 1.25rem; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-line { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 0.65rem 1.25rem; }
+
+/* Battle selector */
+.picker { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); margin-bottom: 2.5rem; }
+.picker button {
+  text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 0.85rem 1rem;
+  display: grid; gap: 0.15rem;
+}
+.picker button[aria-current="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.picker .who { font-stretch: 112%; font-weight: 700; overflow-wrap: anywhere; }
+.tag { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--line); }
+.dot.live { background: var(--sub); }
+.dot.done { background: var(--win); }
+
+/* Face-off */
+.faceoff { display: grid; gap: 1rem; align-items: end; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .faceoff { grid-template-columns: 1fr auto 1fr; } .faceoff .right { text-align: right; justify-items: end; } }
+.faceoff .side { display: grid; gap: 0.35rem; min-width: 0; }
+.faceoff h2 { font-size: clamp(1.9rem, 5.2vw, 3.6rem); line-height: 0.95; overflow-wrap: anywhere; }
+.faceoff .vs { font-stretch: 125%; font-weight: 700; color: var(--muted); font-size: 1.4rem; padding-bottom: 0.5rem; }
+.badge { display: inline-block; border-radius: 999px; padding: 0.05rem 0.55rem; font-size: 0.8rem; background: var(--win); color: var(--on-ink); margin-left: 0.4rem; vertical-align: 0.1em; }
+.up { color: var(--win); } .down { color: var(--loss); }
+.statusbar {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0.75rem 0; margin: 1.5rem 0 2rem;
+}
+.statusbar .main { font-size: 1.1rem; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.9rem; }
+.controls label { display: flex; align-items: center; gap: 0.5rem; }
+.controls input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: var(--signal); }
+.legend { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--muted); }
+.legend i { display: inline-block; width: 4px; height: 0.9rem; border-radius: 2px; background: var(--sub); }
+
+/* Rounds */
+.round { display: grid; gap: 0.85rem; margin-bottom: 2.5rem; }
+.round > h3 { font-size: 0.9rem; color: var(--muted); }
+.pair { display: grid; gap: 1.75rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .pair { grid-template-columns: 1fr 1fr; gap: 2.5rem; } .span2 { grid-column: 1 / -1; } }
+.cell { display: grid; gap: 0.5rem; min-width: 0; }
+.cell .meta { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.85rem; color: var(--muted); flex-wrap: wrap; }
+.empty {
+  display: grid; place-items: center; min-height: 7rem; padding: 1rem; text-align: center;
+  border: 1px dashed var(--line); border-radius: 14px; color: var(--muted);
+}
+
+/* Player */
+.player { display: flex; align-items: center; gap: 0.75rem; }
+.play {
+  flex: none; width: 3rem; height: 3rem; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--ink); color: var(--on-ink);
+}
+.play.sm { width: 2.25rem; height: 2.25rem; }
+.play svg { width: 1rem; height: 1rem; }
+.seek { flex: 1; min-width: 0; cursor: pointer; touch-action: none; border-radius: 4px; }
+.seek canvas { display: block; width: 100%; height: 80px; }
+.seek canvas.compact { height: 36px; }
+.player .t { flex: none; font-size: 0.85rem; color: var(--muted); min-width: 3ch; text-align: right; }
+.loading { display: flex; align-items: center; gap: 0.75rem; height: 80px; color: var(--muted); font-size: 0.9rem; }
+.loading.compact { height: 36px; }
+.loading::before {
+  content: ""; flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 3px);
+}
+
+/* Vote panel */
+.panel { background: var(--surface); border-radius: 18px; padding: 1.25rem; display: grid; gap: 1.1rem; }
+@media (min-width: 640px) { .panel { padding: 1.5rem; } }
+.panel > h3 { font-size: 1.3rem; }
+.votes { display: grid; gap: 0.75rem; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .votes { grid-template-columns: 1fr 1fr; } }
+.vote {
+  border: 2px solid var(--ink); background: transparent; border-radius: 14px; padding: 0.9rem 1rem; font-size: 1.05rem;
+}
+.vote:hover:not(:disabled) { background: var(--ink); color: var(--on-ink); }
+.vote:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }
+.tally { display: grid; gap: 0.4rem; }
+.tally .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.15rem; }
+.bar { display: flex; height: 0.75rem; border-radius: 999px; overflow: hidden; background: var(--line); }
+.bar .a { background: var(--signal); transition: width 0.4s ease; }
+.bar .b { flex: 1; background: var(--sub); }
+.voters { display: grid; gap: 1rem; grid-template-columns: 1fr; font-size: 0.875rem; }
+@media (min-width: 640px) { .voters { grid-template-columns: 1fr 1fr; } }
+.tools {
+  border: 1px dashed var(--line); border-radius: 14px; padding: 0.85rem 1rem; margin-top: 1.5rem;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.9rem;
+}
+
+/* Recorder */
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 1.25rem; display: grid; gap: 1.25rem; }
+.tabs { display: inline-flex; gap: 0.25rem; padding: 0.25rem; background: var(--paper); border-radius: 999px; justify-self: start; }
+.tabs button { border: 0; background: transparent; border-radius: 999px; padding: 0.35rem 0.9rem; font-size: 0.9rem; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--on-ink); }
+.meters { display: grid; gap: 0.5rem; }
+.meter { display: grid; grid-template-columns: 10rem 1fr; gap: 0.75rem; align-items: center; font-size: 0.875rem; }
+.meter .track { height: 0.5rem; border-radius: 999px; background: var(--line); overflow: hidden; }
+.meter .fill { height: 100%; transform-origin: left; transform: scaleX(0); border-radius: 999px; }
+.fill.full { background: var(--signal); } .fill.sub { background: var(--sub); }
+.clip { font-size: 0.875rem; color: var(--loss); min-height: 1.3em; }
+.recrow { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+.recbtn { width: 4rem; height: 4rem; border-radius: 50%; display: grid; place-items: center; background: transparent; border: 4px solid var(--ink); }
+.recbtn span { width: 2rem; height: 2rem; border-radius: 50%; background: var(--sub); }
+.recbtn.stop { border-color: var(--sub); }
+.recbtn.stop span { width: 1.25rem; height: 1.25rem; border-radius: 3px; }
+.clock { font-size: 1.6rem; }
+.prog { height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.prog div { height: 100%; width: 0; background: var(--ink); }
+.warn { border: 1px solid color-mix(in srgb, var(--sub) 40%, transparent); background: color-mix(in srgb, var(--sub) 6%, transparent); border-radius: 10px; padding: 0.75rem; font-size: 0.875rem; display: grid; gap: 0.3rem; }
+.drop {
+  display: grid; place-items: center; gap: 0.4rem; text-align: center; padding: 2.5rem 1.5rem;
+  border: 2px dashed var(--line); border-radius: 14px; cursor: pointer;
+}
+.drop:focus-within { outline: 2px solid var(--signal); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1.5rem; font-size: 0.875rem; }
+@media (min-width: 640px) { .specs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.specs dt { color: var(--muted); } .specs dd { margin: 0; }
+.err { color: var(--loss); }
+.row-btns { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* Directory */
+.dirhead h1 { font-stretch: 125%; font-weight: 800; letter-spacing: -0.02em; font-size: clamp(2.5rem, 7vw, 4.5rem); line-height: 1; }
+.filters { display: grid; gap: 0.75rem; margin: 1.75rem 0; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .filters { grid-template-columns: 2fr 1fr 1fr; } }
+.filters label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+.filters input, .filters select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 0.55rem 0.75rem; color: var(--ink); }
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); list-style: none; padding: 0; margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.15rem; display: grid; gap: 1.1rem; align-content: start; height: 100%; }
+.card header { display: flex; gap: 0.9rem; align-items: flex-start; }
+.avatar { flex: none; width: 3.25rem; height: 3.25rem; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); font-stretch: 125%; font-weight: 800; font-size: 1.2rem; }
+.card .id { min-width: 0; flex: 1; }
+.card h3 { font-size: 1.2rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .elo { text-align: right; }
+.card .elo .num { font-size: 1.9rem; line-height: 1; }
+.record { display: flex; gap: 1rem; font-size: 0.875rem; }
+.record .rate { margin-left: auto; color: var(--muted); }
+.winbar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.winbar div { height: 100%; background: var(--win); }
+.plink {
+  background: none; border: 0; padding: 0; font: inherit; letter-spacing: inherit; color: inherit; text-align: inherit;
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.15em; text-decoration-thickness: 0.06em;
+}
+.plink:hover { text-decoration-color: currentColor; }
+.form { display: flex; gap: 0.25rem; list-style: none; margin: 0; padding: 0; }
+.form li { width: 1.5rem; height: 1.5rem; border-radius: 6px; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; color: var(--on-ink); }
+.f-W { background: var(--win); } .f-L { background: var(--loss); } .f-D { background: var(--muted); }
+.cardrow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.card .btn-line { justify-self: start; padding: 0.5rem 1rem; font-size: 0.9rem; }
+
+/* Profile */
+.back { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 0.4rem 0.9rem; font-size: 0.9rem; }
+.phead { display: flex; gap: 1.25rem; align-items: center; margin: 1.5rem 0 2rem; }
+.avatar.lg { width: 5rem; height: 5rem; font-size: 2rem; }
+.phead h1 { font-size: clamp(2rem, 6vw, 4rem); line-height: 1; overflow-wrap: anywhere; }
+.facts { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin-top: 0.6rem; color: var(--muted); }
+.statgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 0 2.75rem; border-top: 2px solid var(--ink); }
+@media (min-width: 720px) { .statgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.statgrid > div { padding: 0.9rem 1rem 1rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.statgrid dt { font-size: 0.85rem; color: var(--muted); }
+.statgrid dd { margin: 0.15rem 0 0; font-size: 2rem; line-height: 1.1; overflow-wrap: anywhere; }
+.statgrid dd.text { font-size: 1.15rem; font-stretch: 100%; font-weight: 650; padding: 0.35rem 0 0.25rem; }
+.statgrid .note { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+.psec { display: grid; gap: 1rem; margin-bottom: 2.75rem; }
+.psec > h2 { font-size: 1.35rem; font-stretch: 112%; font-weight: 700; }
+.chartwrap { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.75rem; }
+.ylab { display: flex; flex-direction: column; justify-content: space-between; font-size: 0.8rem; color: var(--muted); text-align: right; }
+.xlab { grid-column: 2; display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
+.chart { display: block; width: 100%; height: 11rem; border-bottom: 1px solid var(--line); }
+.chart .line { fill: none; stroke: var(--signal); stroke-width: 2; stroke-linejoin: round; }
+.chart .area { fill: color-mix(in srgb, var(--signal) 10%, transparent); }
+.chart .peak { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.tablewrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: 0.925rem; min-width: 34rem; }
+.data th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.8rem; padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 2px solid var(--ink); }
+.data td { padding: 0.6rem 0.75rem 0.6rem 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.data .n { text-align: right; font-variant-numeric: tabular-nums; }
+.data td:last-child { white-space: nowrap; }
+.inprog { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+
+/* Live + create */
+.picker .new { border-style: dashed; background: transparent; }
+.livechip { font-size: 0.7rem; font-weight: 700; color: var(--on-ink); background: var(--sub); border-radius: 4px; padding: 0 0.35rem; }
+.onair { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 650; }
+.onair i { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--muted); }
+.onair.on { color: var(--sub); }
+.onair.on i { background: var(--sub); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.3; } }
+.stage { display: grid; gap: 0.75rem; justify-items: start; padding: 0.5rem 0 2.75rem; }
+.stage-k { font-size: 1.1rem; color: var(--muted); }
+.bigclock { font-size: clamp(5rem, 19vw, 11rem); line-height: 0.85; font-stretch: 70%; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+.stage-sub { max-width: 54ch; font-size: 1.05rem; }
+.btn-lg { padding: 0.9rem 1.6rem; font-size: 1.1rem; }
+.joined { font-size: 1.05rem; padding-top: 0.6rem; border-top: 2px solid var(--sub); }
+.nowname { font-size: clamp(2rem, 6vw, 3.6rem); line-height: 1; overflow-wrap: anywhere; }
+.nowwave { display: block; width: 100%; height: 96px; }
+.lineup { list-style: none; margin: 0; padding: 0; counter-reset: run; }
+.lineup li { counter-increment: run; display: grid; grid-template-columns: 1.75rem 1fr auto; gap: 0.75rem; align-items: baseline; padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+.lineup li::before { content: counter(run); color: var(--muted); font-variant-numeric: tabular-nums; }
+.create { display: grid; gap: 1.75rem; max-width: 46rem; }
+.create h1 { font-stretch: 125%; font-weight: 800; font-size: clamp(2.2rem, 6vw, 3.6rem); line-height: 1; letter-spacing: -0.02em; }
+.modes { display: grid; gap: 0.75rem; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .modes { grid-template-columns: 1fr 1fr; } }
+.modes > div { display: grid; }
+.modes label { display: grid; gap: 0.35rem; align-content: start; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); cursor: pointer; }
+.modes input:checked + label { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.modes input:focus-visible + label, .segopts input:focus-visible + label { outline: 2px solid var(--signal); outline-offset: 3px; }
+.modes .mt { font-weight: 700; font-stretch: 112%; font-size: 1.1rem; }
+.seg { border: 0; padding: 0; margin: 0; display: grid; gap: 0.5rem; min-width: 0; }
+.seg legend, .field > span { font-size: 0.9rem; color: var(--muted); padding: 0; margin-bottom: 0.5rem; }
+.segopts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.segopts label { display: block; padding: 0.5rem 1rem; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: var(--surface); }
+.segopts input:checked + label { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.field { display: grid; gap: 0.15rem; }
+.field select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 0.6rem 0.75rem; max-width: 22rem; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">BBX&nbsp;Arena<span>.</span></div>
+    <nav class="nav" aria-label="Sections">
+      <button type="button" data-view="battles">Battles</button>
+      <button type="button" data-view="directory">Beatboxers</button>
+    </nav>
+    <p class="note">Preview with sample data. Nothing is saved.</p>
+  </div>
+</header>
+<main id="app" class="wrap"></main>
+
+<script>
+'use strict';
+
+/* ============================================================
+   Small DOM + format helpers
+   ============================================================ */
+const $ = (s, el = document) => el.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+function makeScope() {
+  const fns = [];
+  return { alive: true, add(f) { fns.push(f); }, dispose() { this.alive = false; fns.splice(0).forEach((f) => { try { f(); } catch (e) {} }); } };
+}
+const fmtTime = (s) => { s = Number.isFinite(s) && s > 0 ? s : 0; return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
+function fmtRemaining(ms) {
+  if (ms <= 0) return 'no time';
+  const min = Math.floor(ms / 60000), d = Math.floor(min / 1440), hh = Math.floor((min % 1440) / 60), m = min % 60;
+  if (d > 0) return `${d}d ${hh}h`;
+  if (hh > 0) return `${hh}h ${String(m).padStart(2, '0')}m`;
+  return m > 0 ? `${m}m` : 'under a minute';
+}
+const flag = (c) => (c && /^[A-Z]{2}$/.test(c) ? String.fromCodePoint(...[...c].map((x) => 0x1f1e6 + x.charCodeAt(0) - 65)) : '');
+const regions = new Intl.DisplayNames(['en'], { type: 'region' });
+const countryName = (c) => { try { return c ? regions.of(c) : ''; } catch { return c; } };
+const fmtDb = (db, unit) => (db == null || !Number.isFinite(db) ? '—' : `${db.toFixed(1).replace('-', '−')} ${unit}`);
+const signed = (n) => (n >= 0 ? `+${n}` : `−${Math.abs(n)}`);
+function hashStr(s) { let x = 2166136261; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return x >>> 0; }
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+/* ============================================================
+   Audio core (same pipeline as the codebase)
+   ============================================================ */
+const SUB_HZ = 100;
+
+function encodeWav(channels, sampleRate, bitDepth = 24) {
+  const numCh = channels.length, frames = channels[0].length, bps = bitDepth / 8, blockAlign = numCh * bps, dataSize = frames * blockAlign;
+  const buf = new ArrayBuffer(44 + dataSize), v = new DataView(buf); let o = 0;
+  const str = (s) => { for (let i = 0; i < s.length; i++) v.setUint8(o++, s.charCodeAt(i)); };
+  const u32 = (x) => { v.setUint32(o, x, true); o += 4; }, u16 = (x) => { v.setUint16(o, x, true); o += 2; };
+  str('RIFF'); u32(36 + dataSize); str('WAVE'); str('fmt '); u32(16); u16(1); u16(numCh); u32(sampleRate);
+  u32(sampleRate * blockAlign); u16(blockAlign); u16(bitDepth); str('data'); u32(dataSize);
+  const max = bitDepth === 24 ? 0x7fffff : 0x7fff;
+  for (let i = 0; i < frames; i++) for (let c = 0; c < numCh; c++) {
+    let s = channels[c][i]; s = s > 1 ? 1 : s < -1 ? -1 : s; const q = Math.round(s * max);
+    if (bitDepth === 24) { v.setUint8(o, q & 0xff); v.setUint8(o + 1, (q >> 8) & 0xff); v.setUint8(o + 2, (q >> 16) & 0xff); o += 3; }
+    else { v.setInt16(o, q, true); o += 2; }
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+async function renderThrough(buffer, build) {
+  const ctx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+  const src = new AudioBufferSourceNode(ctx, { buffer });
+  let node = src; for (const n of build(ctx)) { node.connect(n); node = n; }
+  node.connect(ctx.destination); src.start();
+  return ctx.startRendering();
+}
+const chans = (b) => Array.from({ length: b.numberOfChannels }, (_, i) => b.getChannelData(i));
+function binPeaks(buffer, bins) {
+  const cs = chans(buffer), n = buffer.length, out = new Float32Array(bins), step = n / bins;
+  for (let b = 0; b < bins; b++) {
+    const a = Math.floor(b * step), e = Math.min(n, Math.floor((b + 1) * step)); let m = 0;
+    for (let i = a; i < e; i++) for (const c of cs) { const x = c[i] < 0 ? -c[i] : c[i]; if (x > m) m = x; }
+    out[b] = m;
+  }
+  return out;
+}
+function meanSquare(buffer) {
+  let t = 0; for (const c of chans(buffer)) { let s = 0; for (let i = 0; i < c.length; i++) s += c[i] * c[i]; t += s / c.length; }
+  return t / buffer.numberOfChannels;
+}
+async function loudness(buffer) {
+  const k = await renderThrough(buffer, (ctx) => [
+    new BiquadFilterNode(ctx, { type: 'highshelf', frequency: 1500, gain: 4 }),
+    new BiquadFilterNode(ctx, { type: 'highpass', frequency: 38, Q: 0.5 }),
+  ]);
+  const sr = k.sampleRate, block = Math.round(0.4 * sr), hop = Math.round(0.1 * sr);
+  if (k.length < block) return null;
+  const pre = new Float64Array(k.length + 1), cs = chans(k);
+  for (let i = 0; i < k.length; i++) { let s = 0; for (const c of cs) s += c[i] * c[i]; pre[i + 1] = pre[i] + s; }
+  const blocks = []; for (let s = 0; s + block <= k.length; s += hop) blocks.push((pre[s + block] - pre[s]) / block);
+  const L = (ms) => -0.691 + 10 * Math.log10(ms), mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const g1 = blocks.filter((ms) => ms > 0 && L(ms) > -70); if (!g1.length) return null;
+  const rel = L(mean(g1)) - 10, g2 = g1.filter((ms) => L(ms) > rel);
+  return g2.length ? L(mean(g2)) : null;
+}
+async function analyze(buffer, bins = 800) {
+  const n = Math.max(1, Math.min(bins, buffer.length));
+  const low = await renderThrough(buffer, (ctx) => [
+    new BiquadFilterNode(ctx, { type: 'lowpass', frequency: SUB_HZ, Q: Math.SQRT1_2 }),
+    new BiquadFilterNode(ctx, { type: 'lowpass', frequency: SUB_HZ, Q: Math.SQRT1_2 }),
+  ]);
+  const fp = binPeaks(buffer, n), lp = binPeaks(low, n);
+  const peak = fp.reduce((m, v) => (v > m ? v : m), 0) || 1;
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  const msF = meanSquare(buffer), msL = meanSquare(low);
+  return {
+    durationMs: Math.round(buffer.duration * 1000),
+    waveform: { full: Array.from(fp, (v) => r3(v / peak)), low: Array.from(lp, (v) => r3(Math.min(1, v / peak))) },
+    lufs: await loudness(buffer),
+    peakDb: 20 * Math.log10(peak),
+    subRatio: msF > 0 ? Math.min(1, msL / msF) : 0,
+  };
+}
+
+/* Synthesised beatbox-style patterns stand in for real uploads in this preview. */
+async function synthBeat(seed, seconds, snd) {
+  const sr = 48000, rnd = mulberry32(seed);
+  const ctx = new OfflineAudioContext(1, Math.ceil(seconds * sr), sr);
+  const bus = new GainNode(ctx, { gain: 0.8 }); bus.connect(ctx.destination);
+  const noise = ctx.createBuffer(1, sr, sr); const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = rnd() * 2 - 1;
+  const bpm = snd.bpm || 86 + Math.floor(rnd() * 24), st = 60 / bpm / 4;
+  const pats = [[0, 6, 10], [0, 3, 8, 11], [0, 7, 10, 13], [0, 8, 10]];
+  const kp = new Set(pats[Math.floor(rnd() * pats.length)]);
+  const root = 42 + Math.floor(rnd() * 12), ratios = [1, 1, 1.189, 0.891, 1.335];
+  const sub = snd.sub ?? 0.5;
+
+  const env = (g, t, peak, attack, decay) => {
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  };
+  const kick = (t) => {
+    const o = new OscillatorNode(ctx, { type: 'sine' }), g = new GainNode(ctx);
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.11);
+    env(g, t, 0.08 + 0.5 * sub * sub, 0.004, 0.18 + 0.2 * sub); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.4);
+  };
+  const noiseHit = (t, filt, peak, decay) => {
+    const s = new AudioBufferSourceNode(ctx, { buffer: noise }), f = new BiquadFilterNode(ctx, filt), g = new GainNode(ctx);
+    env(g, t, peak, 0.002, decay); s.connect(f).connect(g).connect(bus); s.start(t, rnd() * 0.8, decay + 0.05);
+  };
+  const snare = (t) => {
+    if (snd.kSnare) noiseHit(t, { type: 'highpass', frequency: 2600 }, 1.6, 0.12);
+    else {
+      noiseHit(t, { type: 'bandpass', frequency: 1900, Q: 0.8 }, 3.2, 0.16);
+      const o = new OscillatorNode(ctx, { type: 'triangle', frequency: 190 }), g = new GainNode(ctx);
+      env(g, t, 0.25, 0.002, 0.07); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.1);
+    }
+  };
+  const hat = (t) => noiseHit(t, { type: 'highpass', frequency: 7000 }, 0.7, 0.05);
+  const bass = (t, dur, f) => {
+    const o = new OscillatorNode(ctx, { type: 'sine', frequency: f }), lfo = new OscillatorNode(ctx, { frequency: 5.5 }), lg = new GainNode(ctx, { gain: 1.5 });
+    lfo.connect(lg).connect(o.frequency);
+    const buzz = new OscillatorNode(ctx, { type: 'sawtooth', frequency: f }), lp = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: 200, Q: 1.5 }), bg = new GainNode(ctx, { gain: 0.12 });
+    const g = new GainNode(ctx);
+    const bl = 0.16 * Math.pow(sub, 3);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(bl, t + 0.04);
+    g.gain.setValueAtTime(bl, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); buzz.connect(lp).connect(bg).connect(g); g.connect(bus);
+    [o, lfo, buzz].forEach((n) => { n.start(t); n.stop(t + dur + 0.02); });
+  };
+  const roll = (t, dur) => {
+    const o = new OscillatorNode(ctx, { type: 'sawtooth', frequency: 31 }), f = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: 1100 }), g = new GainNode(ctx);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(f).connect(g).connect(bus); o.start(t); o.stop(t + dur + 0.02);
+  };
+
+  let i = 0;
+  for (let t = 0.05; t < seconds - 0.45; t += st, i++) {
+    const s = i % 16, bar = Math.floor(i / 16);
+    if (kp.has(s)) kick(t);
+    if (s === 4 || s === 12) snare(t);
+    else if (s % 2 === 0 && rnd() < (snd.hat ?? 0.5)) hat(t);
+    if (sub > 0.5 && (s === 0 || (s === 8 && rnd() < 0.5))) bass(t, st * (s === 0 ? 3 : 2), root * ratios[(bar + (s === 8 ? 2 : 0)) % ratios.length]);
+    if (snd.roll && (s === 14 || s === 6) && rnd() < 0.6) roll(t, st * 2);
+  }
+  const buf = await ctx.startRendering();
+  const d = buf.getChannelData(0); let pk = 0; for (let j = 0; j < d.length; j++) pk = Math.max(pk, Math.abs(d[j]));
+  const target = Math.pow(10, (snd.peak ?? -1) / 20) / (pk || 1); for (let j = 0; j < d.length; j++) d[j] *= target;
+  return buf;
+}
+
+const clipCache = new Map();
+const clipReady = new Map();
+let clipQueue = Promise.resolve();
+function getClip(key, seconds, snd) {
+  if (!clipCache.has(key)) {
+    const p = clipQueue.then(async () => {
+      const buf = await synthBeat(hashStr(key), seconds, snd);
+      const analysis = await analyze(buf);
+      const url = URL.createObjectURL(encodeWav([buf.getChannelData(0)], buf.sampleRate, 24));
+      const clip = { url, analysis, lossless: true, buffer: buf };
+      clipReady.set(key, clip);
+      return clip;
+    });
+    clipQueue = p.catch(() => {});
+    clipCache.set(key, p);
+  }
+  return clipCache.get(key);
+}
+
+/* ============================================================
+   Playback: shared context, exclusive play, waveform player
+   ============================================================ */
+let playCtx = null;
+const getPlayCtx = () => (playCtx && playCtx.state !== 'closed' ? playCtx : (playCtx = new AudioContext({ latencyHint: 'playback' })));
+const dbToGain = (db) => Math.pow(10, db / 20);
+const playListeners = new Set();
+const announce = (id) => playListeners.forEach((l) => l(id));
+const redrawers = new Set();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => redrawers.forEach((f) => f()));
+
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5v11a.5.5 0 0 0 .77.42l8.5-5.5a.5.5 0 0 0 0-.84l-8.5-5.5a.5.5 0 0 0-.77.42Z" fill="currentColor"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg>';
+
+function resample(src, n) {
+  const out = new Float32Array(n); if (!src.length) return out; const r = src.length / n;
+  for (let i = 0; i < n; i++) { const a = Math.floor(i * r), b = Math.max(a + 1, Math.floor((i + 1) * r)); let m = 0; for (let j = a; j < b && j < src.length; j++) if (src[j] > m) m = src[j]; out[i] = m; }
+  return out;
+}
+
+function wavePlayer({ src, analysis, label, compact = false, gainDb = 0, onListen }) {
+  const id = Math.random().toString(36).slice(2);
+  const audio = new Audio(); audio.preload = 'metadata'; audio.src = src;
+  const canvas = h('canvas', { class: compact ? 'compact' : '' });
+  const btn = h('button', { type: 'button', class: compact ? 'play sm' : 'play', 'aria-label': `Play ${label}`, html: ICON_PLAY });
+  const seek = h('div', { class: 'seek', role: 'slider', tabindex: '0', 'aria-label': `Seek ${label}`, 'aria-valuemin': '0' }, canvas);
+  const time = h('span', { class: 'num t' });
+  const el = h('div', { class: 'player' }, btn, seek, time);
+  let duration = analysis.durationMs / 1000, graph = null, gain = gainDb, raf = 0, heard = 0, last = 0, reported = 0;
+
+  const css = (n, f) => getComputedStyle(canvas).getPropertyValue(n).trim() || f;
+  function draw() {
+    const w = canvas.clientWidth, hgt = canvas.clientHeight; if (!w || !hgt) return;
+    const dpr = devicePixelRatio || 1;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(hgt * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(hgt * dpr); }
+    const g = canvas.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, hgt);
+    const n = Math.max(1, Math.floor(w / 3)), full = resample(analysis.waveform.full, n), low = resample(analysis.waveform.low, n);
+    const sig = css('--signal', '#2944f0'), sub = css('--sub', '#c8176b'), rest = css('--wave-rest', '#9ea3c0');
+    const played = duration ? (audio.currentTime / duration) * n : 0, mid = hgt / 2, use = hgt - 2;
+    for (let i = 0; i < n; i++) {
+      const x = i * 3, p = i < played, fh = Math.max(1, full[i] * use);
+      g.globalAlpha = p ? 1 : 0.6; g.fillStyle = p ? sig : rest; g.fillRect(x, mid - fh / 2, 2, fh);
+      const lh = low[i] * use;
+      if (lh > 0.75) { g.globalAlpha = p ? 1 : 0.55; g.fillStyle = sub; g.fillRect(x, mid - lh / 2, 2, lh); }
+    }
+    g.globalAlpha = 1;
+  }
+  function paintTime() {
+    const t = audio.currentTime;
+    time.textContent = compact ? fmtTime(duration - t) : `${fmtTime(t)} / ${fmtTime(duration)}`;
+    seek.setAttribute('aria-valuemax', String(Math.round(duration)));
+    seek.setAttribute('aria-valuenow', String(Math.floor(t)));
+    seek.setAttribute('aria-valuetext', `${fmtTime(t)} of ${fmtTime(duration)}`);
+  }
+  function ensureGraph() {
+    if (graph) return;
+    const c = getPlayCtx(), s = c.createMediaElementSource(audio), g = c.createGain();
+    g.gain.value = dbToGain(gain); s.connect(g).connect(c.destination); graph = g;
+  }
+  function tick() {
+    const t = audio.currentTime, d = t - last; if (d > 0 && d < 0.5) heard += d; last = t;
+    if (onListen && duration) {
+      const f = Math.min(1, heard / duration);
+      if (f - reported >= 0.02 || (f === 1 && reported < 1)) { reported = f; onListen(f); }
+    }
+    paintTime(); draw(); raf = requestAnimationFrame(tick);
+  }
+  function seekTo(f) { audio.currentTime = Math.max(0, Math.min(duration, f * duration)); last = audio.currentTime; paintTime(); draw(); }
+
+  btn.addEventListener('click', async () => {
+    if (!audio.paused) { audio.pause(); return; }
+    if (gain !== 0 || graph) { ensureGraph(); await getPlayCtx().resume(); }
+    announce(id);
+    try { await audio.play(); } catch (e) {}
+  });
+  seek.addEventListener('pointerdown', (e) => { const r = seek.getBoundingClientRect(); seekTo((e.clientX - r.left) / r.width); });
+  seek.addEventListener('keydown', (e) => {
+    const now = audio.currentTime / duration, step = 5 / duration;
+    if (e.key === 'ArrowRight') seekTo(now + step); else if (e.key === 'ArrowLeft') seekTo(now - step);
+    else if (e.key === 'Home') seekTo(0); else if (e.key === 'End') seekTo(1); else return;
+    e.preventDefault();
+  });
+  audio.addEventListener('loadedmetadata', () => { if (Number.isFinite(audio.duration)) duration = audio.duration; paintTime(); draw(); });
+  audio.addEventListener('play', () => { btn.innerHTML = ICON_PAUSE; btn.setAttribute('aria-label', `Pause ${label}`); last = audio.currentTime; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); });
+  const stopped = () => { btn.innerHTML = ICON_PLAY; btn.setAttribute('aria-label', `Play ${label}`); cancelAnimationFrame(raf); paintTime(); draw(); };
+  audio.addEventListener('pause', stopped);
+  audio.addEventListener('ended', () => { if (onListen && duration) { const f = Math.min(1, heard / duration); onListen(f); } stopped(); });
+
+  const listener = (other) => { if (other !== id) audio.pause(); };
+  playListeners.add(listener); redrawers.add(draw);
+  const ro = new ResizeObserver(draw); ro.observe(canvas);
+  paintTime(); requestAnimationFrame(draw);
+
+  return {
+    el,
+    setGain(db) {
+      gain = db;
+      if (graph) graph.gain.setTargetAtTime(dbToGain(db), getPlayCtx().currentTime, 0.02);
+      else if (db !== 0 && !audio.paused) { ensureGraph(); getPlayCtx().resume(); }
+    },
+    destroy() { audio.pause(); cancelAnimationFrame(raf); ro.disconnect(); playListeners.delete(listener); redrawers.delete(draw); },
+  };
+}
+
+/* ============================================================
+   Sample data
+   ============================================================ */
+const ME = 'you';
+const HOUR = 3600e3, DAY = 864e5;
+
+// `skill` is hidden: it only decides who tends to win while the sample history
+// is generated. Every visible number comes from replaying that history through Elo.
+const profiles = [
+  { u: 'bassline.bea', name: 'Bea Okafor', c: 'GB', skill: 1780, activity: 9, snd: { sub: 0.95, peak: -1.5, hat: 0.45, bpm: 90 } },
+  { u: 'lowkey.mara', name: 'Mara Lindqvist', c: 'SE', skill: 1700, activity: 8, snd: { sub: 0.85, peak: -2, hat: 0.4, bpm: 84 } },
+  { u: 'tetsu_roll', name: 'Tetsuya Mori', c: 'JP', skill: 1660, activity: 8, snd: { sub: 0.3, peak: -0.3, hat: 0.9, bpm: 104, roll: true } },
+  { u: 'paz.subs', name: 'Paz Ortega', c: 'MX', skill: 1580, activity: 7, snd: { sub: 0.9, peak: -1, hat: 0.6, bpm: 96 } },
+  { u: 'k.snare.kofi', name: 'Kofi Mensah', c: 'GH', skill: 1540, activity: 6, snd: { sub: 0.3, peak: -0.8, hat: 0.75, kSnare: true, bpm: 100 } },
+  { u: 'vibrato_vale', name: 'Valentina Ruiz', c: 'AR', skill: 1480, activity: 5, snd: { sub: 0.55, peak: -2, hat: 0.35, bpm: 88 } },
+  { u: 'dr_inward', name: 'Jonas Weber', c: 'DE', skill: 1400, activity: 4, snd: { sub: 0.75, peak: -1.2, hat: 0.5, kSnare: true } },
+  { u: 'noor.loops', name: 'Noor Haddad', c: 'EG', skill: 1320, activity: 3, snd: { sub: 0.6, peak: -1.8, hat: 0.55 } },
+  { u: 'ivo_snap', name: 'Ivo Santos', c: 'BR', skill: 1250, activity: 1, snd: { sub: 0.4, peak: -1, hat: 0.7, kSnare: true } },
+  { u: ME, name: 'You', c: null, skill: 1200, activity: 0, snd: { sub: 0.5 } },
+].map((p) => ({ ...p, elo: 1200, peak: 1200, w: 0, l: 0, d: 0, forfeits: 0, joined: Date.now() - 30 * DAY }));
+const prof = (u) => profiles.find((p) => p.u === u);
+const battlesOf = (p) => p.w + p.l + p.d;
+
+const VOTERS = ['hollowtone', 'mic_check_ana', 'subwoofer.sam', 'reverb.rin', 'plosive.pete', 'cajon_cam', 'dry.signal', 'fourbar.fia',
+  'lowend.leo', 'snare.sasha', 'wobble.wen', 'click.kit', 'roll.rhea', 'tape.teo', 'bpm.bo', 'phat.fen', 'hum.hana', 'gate.gus',
+  'loop.lou', 'mono.mae', 'bar.bex', 'sibil.sol', 'pump.pia', 'crate.cy', 'echo.eli', 'tilt.tam'];
+const mkVotes = (a, b, na, nb, offset = 0) => [
+  ...VOTERS.slice(offset, offset + na).map((v) => ({ voter: v, for: a })),
+  ...VOTERS.slice(offset + na, offset + na + nb).map((v) => ({ voter: v, for: b })),
+];
+
+const battles = [
+  { id: 'b4', mode: 'live', a: 'vibrato_vale', b: 'dr_inward', status: 'scheduled', startsAt: Date.now() + 2 * 60e3, rounds: 1, limit: 45, votingWindow: 1, audience: 23,
+    subs: [{ user: 'vibrato_vale', round: 1, key: 'b4-vale' }, { user: 'dr_inward', round: 1, key: 'b4-jonas' }], votes: [] },
+  { id: 'b1', mode: 'async', votingWindow: 12, a: 'bassline.bea', b: 'tetsu_roll', status: 'voting', rounds: 1, limit: 45, votingEnds: Date.now() + 7 * HOUR + 5 * 60e3,
+    subs: [{ user: 'bassline.bea', round: 1, key: 'b1-bea' }, { user: 'tetsu_roll', round: 1, key: 'b1-tetsu' }],
+    votes: mkVotes('bassline.bea', 'tetsu_roll', 7, 6, 0) },
+  { id: 'b2', mode: 'async', votingWindow: 12, a: 'paz.subs', b: ME, status: 'active', rounds: 1, limit: 45, turn: ME, deadline: Date.now() + 23 * HOUR + 12 * 60e3,
+    subs: [{ user: 'paz.subs', round: 1, key: 'b2-paz' }], votes: [] },
+  { id: 'b3', mode: 'async', votingWindow: 24, a: 'lowkey.mara', b: 'k.snare.kofi', status: 'finished', rounds: 1, limit: 45, result: 'decision',
+    subs: [{ user: 'lowkey.mara', round: 1, key: 'b3-mara' }, { user: 'k.snare.kofi', round: 1, key: 'b3-kofi' }],
+    votes: mkVotes('lowkey.mara', 'k.snare.kofi', 14, 9, 2) },
+];
+
+/* Finished battles, oldest first. Elo identical to apply_elo in the migration. */
+const history = [];
+function recordResult(rec) {
+  const A = prof(rec.a), B = prof(rec.b);
+  const e = 1 / (1 + Math.pow(10, (B.elo - A.elo) / 400));
+  const kA = battlesOf(A) < 20 ? 40 : 24, kB = battlesOf(B) < 20 ? 40 : 24;
+  rec.dA = Math.round(kA * (rec.score - e));
+  rec.dB = Math.round(kB * ((1 - rec.score) - (1 - e)));
+  A.elo = Math.max(100, A.elo + rec.dA); B.elo = Math.max(100, B.elo + rec.dB);
+  A.peak = Math.max(A.peak, A.elo); B.peak = Math.max(B.peak, B.elo);
+  if (rec.score === 1) { A.w++; B.l++; } else if (rec.score === 0) { A.l++; B.w++; } else { A.d++; B.d++; }
+  if (rec.forfeitBy) prof(rec.forfeitBy).forfeits++;
+  rec.eloA = A.elo; rec.eloB = B.elo;
+  rec.winner = rec.score === 1 ? rec.a : rec.score === 0 ? rec.b : null;
+  history.push(rec);
+  return rec;
+}
+
+(function seedHistory() {
+  const rnd = mulberry32(611);
+  const pool = profiles.filter((p) => p.activity > 0);
+  const pick = (not) => {
+    const c = pool.filter((p) => p !== not);
+    let r = rnd() * c.reduce((s, p) => s + p.activity, 0);
+    for (const p of c) { r -= p.activity; if (r <= 0) return p; }
+    return c[c.length - 1];
+  };
+  const N = 190, span = 520 * DAY, start = Date.now() - span - 4 * DAY;
+  for (let i = 0; i < N; i++) {
+    const A = pick(null), B = pick(A);
+    const aWins = rnd() < 1 / (1 + Math.pow(10, (B.skill - A.skill) / 400));
+    const r = rnd();
+    const rec = { id: `h${i}`, date: start + (i / N) * span + rnd() * DAY * 0.8, a: A.u, b: B.u };
+    if (r < 0.05) { rec.result = 'forfeit'; rec.forfeitBy = aWins ? B.u : A.u; rec.score = aWins ? 1 : 0; }
+    else if (r < 0.09) { const n = 3 + Math.floor(rnd() * 9); rec.result = 'draw'; rec.votesA = rec.votesB = n; rec.score = 0.5; }
+    else {
+      const t = 7 + Math.floor(rnd() * 26), lo = Math.floor(rnd() * Math.ceil(t / 2)), hi = t - lo;
+      rec.result = 'decision'; rec.score = aWins ? 1 : 0; rec.votesA = aWins ? hi : lo; rec.votesB = aWins ? lo : hi;
+    }
+    recordResult(rec);
+  }
+  for (const p of pool) {
+    const first = history.find((r) => r.a === p.u || r.b === p.u);
+    if (first) p.joined = first.date - (12 + Math.floor(rnd() * 60)) * DAY;
+  }
+  const b3 = battles.find((b) => b.id === 'b3');
+  const rec = recordResult({ id: 'b3', battleId: 'b3', date: Date.now() - 2 * DAY, a: b3.a, b: b3.b, result: 'decision', score: 1, votesA: 14, votesB: 9 });
+  b3.deltas = { a: rec.dA, b: rec.dB }; b3.winner = rec.winner;
+})();
+
+function finalize(b) {
+  const na = b.votes.filter((v) => v.for === b.a).length, nb = b.votes.filter((v) => v.for === b.b).length;
+  b.status = 'finished'; b.votingEnds = null;
+  if (na + nb === 0) { b.result = 'no_contest'; return; }
+  const score = na > nb ? 1 : na < nb ? 0 : 0.5;
+  const rec = recordResult({ id: b.id, battleId: b.id, date: Date.now(), a: b.a, b: b.b, result: score === 0.5 ? 'draw' : 'decision', score, votesA: na, votesB: nb });
+  b.deltas = { a: rec.dA, b: rec.dB }; b.result = rec.result; b.winner = rec.winner;
+}
+
+/* ============================================================
+   App state + routing
+   ============================================================ */
+const state = { view: 'battles', battleId: 'b4', profile: null, joined: {}, liveMuted: false, draft: null, match: true, listened: {}, filters: { q: '', country: '', sort: 'rating' } };
+let mainScope = makeScope();
+
+function go(view, extra = {}) { Object.assign(state, { view }, extra); renderMain(); window.scrollTo(0, 0); }
+function renderMain() {
+  mainScope.dispose(); mainScope = makeScope();
+  const app = $('#app'); app.innerHTML = '';
+  app.append(state.view === 'directory' ? viewDirectory(mainScope)
+    : state.view === 'profile' ? viewProfile(prof(state.profile))
+    : state.view === 'create' ? viewCreate()
+    : viewBattles(mainScope));
+  const navView = state.view === 'profile' ? 'directory' : state.view === 'create' ? 'battles' : state.view;
+  document.querySelectorAll('.nav button').forEach((b) => b.setAttribute('aria-current', b.dataset.view === navView ? 'page' : 'false'));
+}
+document.querySelectorAll('.nav button').forEach((b) => b.addEventListener('click', () => go(b.dataset.view)));
+
+setInterval(() => document.querySelectorAll('[data-deadline]').forEach((el) => { el.textContent = fmtRemaining(Number(el.dataset.deadline) - Date.now()); }), 30e3);
+const remainingSpan = (ts) => h('span', { 'data-deadline': String(ts) }, fmtRemaining(ts - Date.now()));
+const profileLink = (u) => h('button', { type: 'button', class: 'plink', onclick: () => go('profile', { profile: u }) }, `@${u}`);
+
+/* ============================================================
+   Live battles + turn logic
+   ============================================================ */
+const winText = (hrs) => (hrs === 1 ? '1 hour' : `${hrs} hours`);
+function fmtClock(ms) {
+  if (ms <= 0) return '0:00';
+  if (ms >= HOUR) return fmtRemaining(ms);
+  const s = Math.ceil(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+const clockSpan = (ts) => h('span', { 'data-clock': String(ts) }, fmtClock(ts - Date.now()));
+const subClip = (s) => (s.take ? Promise.resolve(s.take) : getClip(s.key, 20, prof(s.user).snd));
+const subReady = (s) => s.take || clipReady.get(s.key) || null;
+
+function battleDetails(b) {
+  const rounds = b.rounds === 1 ? 'One round' : `${b.rounds} rounds`;
+  return b.mode === 'live'
+    ? `Live battle. ${rounds} each, ${b.limit} seconds per round, voting open ${winText(b.votingWindow)} after the last round`
+    : `${rounds} each, ${b.limit} seconds per round, voting open ${winText(b.votingWindow)}`;
+}
+
+function afterSubmit(b) {
+  if (b.subs.length >= b.rounds * 2) { b.status = 'voting'; b.turn = null; b.votingEnds = Date.now() + b.votingWindow * HOUR; }
+  else { b.turn = b.turn === b.a ? b.b : b.a; b.deadline = Date.now() + 24 * HOUR; }
+}
+
+/* Build the shared timeline: every listener plays the same round at the same wall-clock moment. */
+function startLive(b) {
+  b.status = 'live'; b.schedule = [];
+  let t = b.startsAt + 3000;
+  for (let r = 1; r <= b.rounds; r++) for (const u of [b.a, b.b]) {
+    const s = b.subs.find((x) => x.user === u && x.round === r), c = subReady(s);
+    const dur = c ? c.analysis.durationMs : 20000;
+    b.schedule.push({ key: s.key, sub: s, user: u, round: r, at: t, dur });
+    t += dur + 4000;
+  }
+  b.liveEnds = t - 4000 + 1500;
+}
+
+function forfeitLive(b) {
+  const missing = [b.a, b.b].find((u) => !b.subs.some((s) => s.user === u));
+  const rec = recordResult({ id: b.id, battleId: b.id, date: Date.now(), a: b.a, b: b.b, result: 'forfeit', forfeitBy: missing, score: missing === b.a ? 0 : 1 });
+  Object.assign(b, { status: 'finished', result: 'forfeit', forfeitBy: missing, winner: rec.winner, deltas: { a: rec.dA, b: rec.dB } });
+}
+
+function onBattleChanged(b) {
+  if (state.view !== 'battles') return;
+  if (state.battleId === b.id) renderMain(); else paintPicker();
+}
+
+function liveTick(now) {
+  for (const b of battles) {
+    if (b.mode !== 'live') continue;
+    if ((b.status === 'scheduled' || b.status === 'live') && Math.random() < 0.08) b.audience = Math.max(3, b.audience + (Math.random() < 0.85 ? 1 : -1));
+    let changed = false;
+    if (b.status === 'scheduled' && now >= b.startsAt) {
+      changed = true;
+      if (b.subs.length < b.rounds * 2) forfeitLive(b); else startLive(b);
+    } else if (b.status === 'live' && now >= b.liveEnds) {
+      changed = true;
+      b.status = 'voting'; b.votingEnds = b.liveEnds + b.votingWindow * HOUR; b.trickleUntil = now + 90e3;
+    }
+    // The room's audience votes in the first minute and a half after the last round.
+    if (b.status === 'voting' && b.trickleUntil && now < b.trickleUntil && Math.random() < 0.05) {
+      const used = new Set(b.votes.map((v) => v.voter)), pool = VOTERS.filter((v) => !used.has(v));
+      if (pool.length) {
+        b.votes.push({ voter: pool[Math.floor(Math.random() * pool.length)], for: Math.random() < 0.5 ? b.a : b.b });
+        window.dispatchEvent(new CustomEvent('bbx-votes', { detail: b.id }));
+      }
+    }
+    if (changed) onBattleChanged(b);
+  }
+}
+setInterval(() => {
+  const now = Date.now();
+  document.querySelectorAll('[data-clock]').forEach((el) => { el.textContent = fmtClock(Number(el.dataset.clock) - now); });
+  liveTick(now);
+}, 250);
+battles.filter((b) => b.mode === 'live').forEach((b) => b.subs.forEach(subClip));
+
+function drawWave(canvas, waveform, frac) {
+  const w = canvas.clientWidth, hgt = canvas.clientHeight; if (!w || !hgt) return;
+  const dpr = devicePixelRatio || 1;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(hgt * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(hgt * dpr); }
+  const g = canvas.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, hgt);
+  const cs = getComputedStyle(canvas), css = (n, f) => cs.getPropertyValue(n).trim() || f;
+  const n = Math.max(1, Math.floor(w / 3)), full = resample(waveform.full, n), low = resample(waveform.low, n);
+  const sig = css('--signal', '#2944f0'), sub = css('--sub', '#c8176b'), rest = css('--wave-rest', '#9ea3c0');
+  const played = frac * n, mid = hgt / 2, use = hgt - 2;
+  for (let i = 0; i < n; i++) {
+    const x = i * 3, p = i < played, fh = Math.max(1, full[i] * use);
+    g.globalAlpha = p ? 1 : 0.6; g.fillStyle = p ? sig : rest; g.fillRect(x, mid - fh / 2, 2, fh);
+    const lh = low[i] * use;
+    if (lh > 0.75) { g.globalAlpha = p ? 1 : 0.55; g.fillStyle = sub; g.fillRect(x, mid - lh / 2, 2, lh); }
+  }
+  g.globalAlpha = 1;
+}
+
+function viewLiveRoom(b, scope) {
+  const isParticipant = b.a === ME || b.b === ME;
+  const joined = () => !!state.joined[b.id];
+  const root = h('article', { class: 'liveroom', 'aria-label': `Live battle, @${b.a} versus @${b.b}` });
+  root.append(h('header', { class: 'faceoff' },
+    playerSide(prof(b.a), 'left', b, true), h('span', { class: 'vs', 'aria-hidden': 'true' }, 'vs'), playerSide(prof(b.b), 'right', b, false)));
+
+  const audienceEl = h('span', { class: 'num' }, b.audience + (joined() ? 1 : 0));
+  root.append(h('div', { class: 'statusbar' },
+    h('p', { class: 'main' }, h('span', { class: 'onair' + (b.status === 'live' ? ' on' : '') }, h('i', { 'aria-hidden': 'true' }), b.status === 'live' ? 'Live now' : 'Live battle'),
+      h('span', { class: 'muted' }, ', '), audienceEl, h('span', { class: 'muted' }, ' in the room')),
+    h('p', { class: 'muted small' }, battleDetails(b).replace('Live battle. ', ''))));
+
+  const enter = (label) => h('button', { type: 'button', class: 'btn btn-lg', onclick: async () => {
+    state.joined[b.id] = true; announce('room');
+    try { await getPlayCtx().resume(); } catch (e) {}
+    renderMain();
+  } }, label);
+
+  let room = null;
+  const stage = h('section', { class: 'stage', 'aria-label': 'Stage' });
+  const statusEl = h('p', { class: 'sr', role: 'status' });
+  let clock = null, nowLabel = null, nowName = null, nowMeta = null, nowCanvas = null;
+
+  if (b.status === 'scheduled') {
+    clock = h('p', { class: 'bigclock num' }, fmtClock(b.startsAt - Date.now()));
+    stage.append(h('p', { class: 'stage-k' }, 'Battle starts in'), clock,
+      h('p', { class: 'stage-sub' }, `Both rounds play for everyone at the same moment. Listen live, then judge. Voting stays open ${winText(b.votingWindow)} after the last round.`),
+      joined() ? h('p', { class: 'joined' }, 'You’re in. Keep this tab open with your sound on.')
+               : enter(isParticipant ? 'Enter the room' : 'Enter to listen and judge'));
+  } else {
+    nowLabel = h('p', { class: 'stage-k' }); nowName = h('h2', { class: 'handle nowname' });
+    nowCanvas = h('canvas', { class: 'nowwave', 'aria-hidden': 'true' }); nowMeta = h('p', { class: 'muted num' });
+    const mute = h('button', { type: 'button', class: 'btn-line', 'aria-pressed': String(state.liveMuted), onclick: () => {
+      state.liveMuted = !state.liveMuted;
+      if (room) room.master.gain.setTargetAtTime(state.liveMuted ? 0 : 1, getPlayCtx().currentTime, 0.02);
+      mute.textContent = state.liveMuted ? 'Unmute' : 'Mute'; mute.setAttribute('aria-pressed', String(state.liveMuted));
+    } }, state.liveMuted ? 'Unmute' : 'Mute');
+    stage.append(nowLabel, nowName, nowCanvas, nowMeta,
+      joined()
+        ? h('div', { class: 'row-btns', style: 'align-items:center' }, mute, h('span', { class: 'small muted' }, 'Levels are matched for everyone, so nobody wins on volume.'))
+        : h('div', { class: 'stack', style: 'justify-items:start;gap:.5rem' }, enter('Join now'),
+            h('p', { class: 'small muted' }, 'You’ll hear the rest live. Full replays open when voting starts.')));
+  }
+  root.append(stage, statusEl);
+
+  // Running order
+  const order = b.status === 'live' ? b.schedule : (() => {
+    const o = []; for (let r = 1; r <= b.rounds; r++) for (const u of [b.a, b.b]) o.push({ user: u, round: r }); return o;
+  })();
+  const lineStatus = [];
+  root.append(h('section', { class: 'psec' }, h('h2', {}, 'Running order'),
+    h('ol', { class: 'lineup' }, order.map((it) => {
+      const st = h('span', { class: 'small muted num' }); lineStatus.push(st);
+      return h('li', {}, h('span', {}, profileLink(it.user), `, round ${it.round}`), st);
+    })),
+    h('p', { class: 'small muted' }, 'Voting opens for everyone when the last round ends.')));
+
+  if (b.status === 'scheduled' && isParticipant && !b.subs.some((s) => s.user === ME)) {
+    root.append(h('section', { class: 'psec' }, h('h2', {}, 'Your round'),
+      h('p', {}, 'Get it in before the start, or the battle counts as a forfeit.'),
+      makeRecorder({ maxSeconds: b.limit, scope, submitLabel: 'Lock in my round', onSubmit: async (take) => {
+        await new Promise((r) => setTimeout(r, 500));
+        b.subs.push({ user: ME, round: 1, key: `${b.id}-me`, take }); renderMain();
+      } })));
+  }
+
+  if (b.status === 'scheduled') {
+    const ready = b.subs.length >= b.rounds * 2;
+    root.append(h('div', { class: 'tools' },
+      h('span', { class: 'muted' }, ready ? 'Preview control: skip the countdown.' : 'Preview control: available once both rounds are in.'),
+      h('button', { type: 'button', class: 'btn-line', disabled: !ready, onclick: () => { b.startsAt = Date.now(); } }, 'Start now')));
+  }
+
+  // Room audio: Web Audio sources scheduled against the shared timeline, so a late joiner lands mid-round.
+  async function startRoomAudio() {
+    const ctx = getPlayCtx();
+    const items = b.schedule.filter((it) => it.at + it.dur > Date.now());
+    const clips = await Promise.all(items.map((it) => subClip(it.sub)));
+    if (!scope.alive) return;
+    if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
+    const lufs = b.schedule.map((it) => { const c = subReady(it.sub); return c ? c.analysis.lufs : null; }).filter((x) => x != null);
+    const target = lufs.length > 1 ? Math.min(...lufs) : null;
+    const master = new GainNode(ctx, { gain: state.liveMuted ? 0 : 1 }); master.connect(ctx.destination);
+    const srcs = [], now = Date.now();
+    items.forEach((it, i) => {
+      const c = clips[i], s = new AudioBufferSourceNode(ctx, { buffer: c.buffer });
+      const g = new GainNode(ctx, { gain: target != null && c.analysis.lufs != null ? dbToGain(target - c.analysis.lufs) : 1 });
+      s.connect(g).connect(master);
+      if (now >= it.at) s.start(0, (now - it.at) / 1000); else s.start(ctx.currentTime + (it.at - now) / 1000);
+      srcs.push(s);
+    });
+    room = { master, srcs };
+  }
+  if (b.status === 'live' && joined()) startRoomAudio();
+  scope.add(() => { if (room) { room.srcs.forEach((s) => { try { s.stop(); } catch (e) {} }); room.master.disconnect(); room = null; } });
+
+  let last = Date.now(), curKey;
+  const tick = () => {
+    const now = Date.now(), dt = now - last; last = now;
+    audienceEl.textContent = String(b.audience + (joined() ? 1 : 0));
+    if (b.status === 'scheduled') {
+      if (clock) clock.textContent = fmtClock(b.startsAt - now);
+      order.forEach((it, i) => { lineStatus[i].textContent = b.subs.some((s) => s.user === it.user && s.round === it.round) ? 'Round is in' : 'Waiting for this round'; });
+      return;
+    }
+    if (b.status !== 'live') return;
+    const cur = b.schedule.find((it) => now >= it.at && now < it.at + it.dur);
+    const next = b.schedule.find((it) => now < it.at);
+    if (cur && joined() && !state.liveMuted) state.listened[cur.key] = Math.min(1, (state.listened[cur.key] || 0) + dt / cur.dur);
+    const key = cur ? cur.key : next ? 'gap:' + next.key : 'end';
+    if (key !== curKey) {
+      curKey = key;
+      if (cur) { nowLabel.textContent = `Now playing, round ${cur.round}`; nowName.textContent = `@${cur.user}`; statusEl.textContent = `Now playing @${cur.user}, round ${cur.round}`; }
+      else if (next) { nowLabel.textContent = 'Up next'; nowName.textContent = `@${next.user}`; statusEl.textContent = `Up next: @${next.user}`; }
+      else { nowLabel.textContent = 'That was the last round'; nowName.textContent = 'Voting opens now'; nowMeta.textContent = ''; statusEl.textContent = 'Voting opens now'; }
+    }
+    if (cur) {
+      const c = subReady(cur.sub), pos = now - cur.at;
+      nowMeta.textContent = `${fmtTime(pos / 1000)} / ${fmtTime(cur.dur / 1000)}`;
+      if (c) drawWave(nowCanvas, c.analysis.waveform, pos / cur.dur);
+    } else if (next) {
+      nowMeta.textContent = `Starts in ${fmtClock(next.at - now)}`;
+      const c = subReady(next.sub); if (c) drawWave(nowCanvas, c.analysis.waveform, 0);
+    }
+    order.forEach((it, i) => { lineStatus[i].textContent = now >= it.at + it.dur ? 'Played' : now >= it.at ? 'Playing now' : `Starts in ${fmtClock(it.at - now)}`; });
+  };
+  const iv = setInterval(tick, 200); scope.add(() => clearInterval(iv));
+  requestAnimationFrame(tick);
+  return root;
+}
+
+/* ============================================================
+   Start a battle
+   ============================================================ */
+let newId = 0;
+function viewCreate() {
+  const f = state.draft || (state.draft = { mode: 'async', opp: 'tetsu_roll', limit: 45, vote: 12, start: 2 });
+  const opps = profiles.filter((p) => p.u !== ME).sort((a, b) => a.u.localeCompare(b.u));
+  const radio = (name, value, label, onPick) => {
+    const id = `opt-${name}-${value}`;
+    const input = h('input', { type: 'radio', name, id, value: String(value), class: 'sr', onchange: () => onPick(value) });
+    input.checked = f[name] === value;
+    return h('div', {}, input, h('label', { for: id }, label));
+  };
+  const seg = (name, legend, options, note) => h('fieldset', { class: 'seg' }, h('legend', {}, legend),
+    h('div', { class: 'segopts' }, options.map(([v, t]) => radio(name, v, t, (x) => { f[name] = x; }))),
+    note ? h('p', { class: 'small muted' }, note) : null);
+
+  const dependent = h('div', { class: 'stack', style: 'gap:1.75rem' });
+  const submit = h('button', { type: 'button', class: 'btn', onclick: create });
+  function paintDependent() {
+    dependent.innerHTML = '';
+    if (f.mode === 'live') dependent.append(seg('start', 'Starts in', [[2, '2 minutes'], [10, '10 minutes'], [30, '30 minutes']],
+      'Both rounds have to be in before the start. A missing round counts as a forfeit.'));
+    else dependent.append(h('p', { class: 'small muted' }, 'You record first. Each battler then has 24 hours to respond.'));
+    dependent.append(seg('vote', 'Voting stays open', [[1, '1 hour'], [12, '12 hours'], [24, '24 hours']],
+      f.mode === 'live' ? 'Counted from the moment the last round finishes playing.' : 'Counted from the moment both rounds are in.'));
+    submit.textContent = f.mode === 'live' ? 'Schedule live battle' : 'Send challenge';
+  }
+  function create() {
+    const id = `n${++newId}`, now = Date.now();
+    const base = { id, a: ME, b: f.opp, rounds: 1, limit: f.limit, votingWindow: f.vote, votes: [], subs: [] };
+    if (f.mode === 'live') {
+      Object.assign(base, { mode: 'live', status: 'scheduled', startsAt: now + f.start * 60e3, audience: 2 + Math.floor(Math.random() * 6) });
+      base.subs.push({ user: f.opp, round: 1, key: `${id}-${f.opp}` });
+      subClip(base.subs[0]);
+    } else {
+      Object.assign(base, { mode: 'async', status: 'active', turn: ME, deadline: now + 24 * HOUR });
+    }
+    battles.unshift(base); state.draft = null;
+    go('battles', { battleId: id });
+  }
+  const oppSel = h('select', { id: 'opp', onchange: (e) => { f.opp = e.target.value; } }, opps.map((p) => h('option', { value: p.u }, `@${p.u}`)));
+  oppSel.value = f.opp;
+  paintDependent();
+  const pickMode = (x) => { f.mode = x; paintDependent(); };
+  return h('div', { class: 'create' },
+    h('button', { type: 'button', class: 'back', style: 'justify-self:start', onclick: () => go('battles') }, 'Back to battles'),
+    h('h1', {}, 'Start a battle'),
+    h('fieldset', { class: 'seg' }, h('legend', {}, 'Format'),
+      h('div', { class: 'modes' },
+        radio('mode', 'async', [h('span', { class: 'mt' }, 'Take turns'), h('span', { class: 'small muted' }, 'Each of you records on your own time. People listen and vote whenever they like.')], pickMode),
+        radio('mode', 'live', [h('span', { class: 'mt' }, 'Live battle'), h('span', { class: 'small muted' }, 'Rounds premiere at a set time. Everyone in the room hears them together, then judges.')], pickMode))),
+    h('label', { class: 'field', for: 'opp' }, h('span', {}, 'Opponent'), oppSel),
+    seg('limit', 'Round length', [[30, '30 seconds'], [45, '45 seconds'], [90, '90 seconds']]),
+    dependent,
+    h('div', { class: 'row-btns' }, submit, h('button', { type: 'button', class: 'btn-line', onclick: () => go('battles') }, 'Cancel')));
+}
+
+/* ============================================================
+   Battles
+   ============================================================ */
+function pickerTag(b) {
+  const dot = (k) => h('span', { class: 'dot ' + k });
+  if (b.status === 'scheduled') return [dot('live'), 'Live in ', clockSpan(b.startsAt)];
+  if (b.status === 'live') return [dot('live'), 'Live now'];
+  if (b.status === 'voting') return [dot('live'), 'Voting open'];
+  if (b.status === 'active') return [dot('live'), b.turn === ME ? 'Your turn' : `@${b.turn}’s turn`];
+  return [dot('done'), b.result === 'no_contest' ? 'No contest' : b.winner ? `@${b.winner} won` : 'Draw'];
+}
+function buildPicker(currentId) {
+  return h('div', { class: 'picker', role: 'list', 'aria-label': 'Battles' },
+    h('button', { type: 'button', role: 'listitem', class: 'new', onclick: () => go('create') },
+      h('span', { class: 'who' }, 'Start a battle'), h('span', { class: 'tag' }, 'Take turns or go live')),
+    battles.map((x) => h('button', { type: 'button', role: 'listitem', 'aria-current': x.id === currentId ? 'true' : 'false', onclick: () => go('battles', { battleId: x.id }) },
+      h('span', { class: 'who' }, `@${x.a} vs @${x.b}`),
+      h('span', { class: 'tag' }, x.mode === 'live' ? h('span', { class: 'livechip' }, 'Live') : null, pickerTag(x)))));
+}
+function paintPicker() { const old = $('.picker'); if (old) old.replaceWith(buildPicker(state.battleId)); }
+
+function viewBattles(scope) {
+  const b = battles.find((x) => x.id === state.battleId) || battles[0];
+  return h('div', {}, buildPicker(b.id),
+    b.mode === 'live' && (b.status === 'scheduled' || b.status === 'live') ? viewLiveRoom(b, scope) : viewBattle(b, scope));
+}
+
+function playerSide(p, align, b, isA) {
+  const delta = b.status === 'finished' && b.deltas ? (isA ? b.deltas.a : b.deltas.b) : null;
+  return h('div', { class: 'side ' + align },
+    h('h2', { class: 'handle' }, profileLink(p.u)),
+    h('p', { class: 'muted' },
+      p.c ? h('span', { 'aria-hidden': 'true' }, flag(p.c) + ' ') : null,
+      h('span', { class: 'num', style: 'color:var(--ink)' }, p.elo), ' rating',
+      delta != null ? h('span', { class: 'num ' + (delta >= 0 ? 'up' : 'down'), style: 'margin-left:.5rem' }, signed(delta)) : null,
+      b.winner === p.u ? h('span', { class: 'badge' }, 'Winner') : null));
+}
+
+function viewBattle(b, scope) {
+  const A = prof(b.a), B = prof(b.b);
+  const isParticipant = b.a === ME || b.b === ME;
+  const root = h('article', { 'aria-label': `@${b.a} versus @${b.b}` });
+
+  root.append(h('header', { class: 'faceoff' },
+    playerSide(A, 'left', b, true),
+    h('span', { class: 'vs', 'aria-hidden': 'true' }, 'vs'),
+    playerSide(B, 'right', b, false)));
+
+  const tallyA = () => b.votes.filter((v) => v.for === b.a).length, tallyB = () => b.votes.filter((v) => v.for === b.b).length;
+  let status;
+  if (b.status === 'voting') status = h('p', { class: 'main', role: 'status' }, 'Voting closes in ', remainingSpan(b.votingEnds), '.');
+  else if (b.status === 'active') status = h('p', { class: 'main', role: 'status' }, b.turn === ME ? 'Your turn. ' : `@${b.turn} is up. `, remainingSpan(b.deadline), ' left to respond.');
+  else {
+    const hi = Math.max(tallyA(), tallyB()), lo = Math.min(tallyA(), tallyB());
+    status = h('p', { class: 'main', role: 'status' },
+      b.result === 'forfeit' ? `@${b.winner} wins by forfeit. @${b.forfeitBy} didn’t get a round in before the start.` :
+      b.result === 'no_contest' ? 'No votes were cast, so ratings didn’t change.' :
+      b.result === 'draw' ? `Draw, ${hi} votes each.` : `@${b.winner} wins by decision, ${hi} to ${lo}.`);
+  }
+  root.append(h('div', { class: 'statusbar' }, status,
+    h('p', { class: 'muted small' }, battleDetails(b))));
+
+  // Listening controls
+  const players = new Map();
+  function applyGains() {
+    const vals = [...players.values()].map((p) => p.analysis.lufs).filter((x) => x != null);
+    const target = vals.length > 1 ? Math.min(...vals) : null;
+    players.forEach((p) => p.player.setGain(state.match && target != null && p.analysis.lufs != null ? target - p.analysis.lufs : 0));
+  }
+  if (b.subs.length > 1) {
+    const cb = h('input', { type: 'checkbox', onchange: (e) => { state.match = e.target.checked; applyGains(); } });
+    cb.checked = state.match;
+    root.append(h('div', { class: 'controls' },
+      h('label', {}, cb, 'Match loudness'),
+      h('span', { class: 'muted', style: 'max-width:46ch' }, 'Turns the louder side down so nobody wins on volume. Nothing is compressed or boosted.'),
+      h('span', { class: 'legend' }, h('i'), 'Sub-bass below 100 Hz')));
+  }
+
+  // Rounds
+  const heardLabels = new Map();
+  for (let round = 1; round <= b.rounds; round++) {
+    const pair = h('div', { class: 'pair' });
+    for (const u of [b.a, b.b]) {
+      const p = prof(u), sub = b.subs.find((s) => s.user === u && s.round === round);
+      if (sub) {
+        const cell = h('div', { class: 'cell' }, h('p', { class: 'small' }, profileLink(u)));
+        const slot = h('div', { class: 'loading' }, 'Preparing audio…');
+        const meta = h('div', { class: 'meta' });
+        cell.append(slot, meta); pair.append(cell);
+        const ready = sub.take ? Promise.resolve(sub.take) : getClip(sub.key, 20, p.snd);
+        ready.then((clip) => {
+          if (!scope.alive) return;
+          const pl = wavePlayer({
+            src: clip.url, analysis: clip.analysis, label: `@${u} round ${round}`,
+            onListen: (f) => {
+              const prev = state.listened[sub.key] || 0; if (f <= prev) return;
+              state.listened[sub.key] = f; paintHeard(sub.key);
+              if ((prev < 0.5) !== (f < 0.5)) paintVotes();
+            },
+          });
+          scope.add(() => pl.destroy());
+          slot.replaceWith(pl.el);
+          players.set(sub.key, { player: pl, analysis: clip.analysis });
+          const heard = h('span');
+          heardLabels.set(sub.key, heard);
+          meta.append(h('span', {}, `Sub-bass share ${Math.round(clip.analysis.subRatio * 100)}%, loudness ${fmtDb(clip.analysis.lufs, 'LUFS')}`), heard);
+          paintHeard(sub.key); applyGains();
+        });
+      } else if (b.status === 'active' && b.turn === u && u === ME) {
+        pair.append(h('div', { class: 'cell span2' },
+          h('p', {}, `Your round ${round}. You have `, remainingSpan(b.deadline), ' to submit.'),
+          makeRecorder({
+            maxSeconds: b.limit, scope, submitLabel: `Submit round ${round}`,
+            onSubmit: async (take) => {
+              await new Promise((r) => setTimeout(r, 700));
+              b.subs.push({ user: ME, round, key: `${b.id}-me-${round}`, take });
+              afterSubmit(b);
+              renderMain();
+            },
+          })));
+      } else {
+        pair.append(h('div', { class: 'empty' },
+          b.status === 'active' && b.turn === u ? h('span', {}, `Waiting for @${u}. `, remainingSpan(b.deadline), ' left.') :
+          b.status === 'finished' ? 'Not recorded' : `@${u} hasn’t recorded this round yet`));
+      }
+    }
+    root.append(h('section', { class: 'round', 'aria-label': `Round ${round}` }, h('h3', {}, `Round ${round}`), pair));
+  }
+
+  function paintHeard(key) {
+    const el = heardLabels.get(key); if (!el) return;
+    const f = state.listened[key] || 0;
+    const myVote = b.votes.find((v) => v.voter === ME);
+    el.textContent = b.status === 'voting' && !isParticipant && !myVote ? (f >= 0.5 ? 'Heard' : `${Math.round(f * 100)}% heard`) : '';
+  }
+
+  // Votes
+  const votePanel = h('section', { class: 'panel', 'aria-labelledby': `vote-${b.id}` });
+  function paintVotes() {
+    votePanel.innerHTML = '';
+    if (b.status !== 'voting' && b.status !== 'finished') { votePanel.hidden = true; return; }
+    votePanel.hidden = false;
+    const myVote = b.votes.find((v) => v.voter === ME);
+    votePanel.append(h('h3', { id: `vote-${b.id}` }, b.status === 'voting' ? 'Who took it?' : 'Votes'));
+    if (b.status === 'voting') {
+      if (isParticipant) votePanel.append(h('p', { class: 'muted' }, 'You can’t vote in your own battle.'));
+      else if (myVote) votePanel.append(h('p', {}, `You voted for @${myVote.for}.`));
+      else {
+        const heardAll = b.subs.every((s) => (state.listened[s.key] || 0) >= 0.5);
+        votePanel.append(h('div', { class: 'votes' }, [b.a, b.b].map((u) =>
+          h('button', { type: 'button', class: 'vote', disabled: !heardAll, onclick: () => { b.votes.push({ voter: ME, for: u }); paintVotes(); heardLabels.forEach((_, k) => paintHeard(k)); } },
+            'Vote for ', h('span', { class: 'handle' }, `@${u}`)))));
+        if (!heardAll) votePanel.append(h('p', { class: 'small muted' }, 'Listen to at least half of every round to unlock voting.'));
+      }
+    }
+    const showTally = b.status === 'finished' || myVote || isParticipant;
+    if (showTally) {
+      const na = tallyA(), nb = tallyB(), tot = na + nb;
+      votePanel.append(h('div', { class: 'tally' },
+        h('div', { class: 'row num' }, h('span', {}, na), h('span', { class: 'small muted' }, tot === 1 ? '1 vote' : `${tot} votes`), h('span', {}, nb)),
+        h('div', { class: 'bar', role: 'img', 'aria-label': `${na} votes for @${b.a}, ${nb} for @${b.b}` },
+          h('div', { class: 'a', style: `width:${tot ? (na / tot) * 100 : 50}%` }), h('div', { class: 'b' }))));
+    } else if (b.status === 'voting') {
+      votePanel.append(h('p', { class: 'small muted' }, 'Vote counts appear after you vote, so the crowd doesn’t steer you.'));
+    }
+    if (b.status === 'finished' && b.votes.length) {
+      votePanel.append(h('div', { class: 'voters' }, [b.a, b.b].map((u) => {
+        const vs = b.votes.filter((v) => v.for === u).map((v) => `@${v.voter}`);
+        return h('div', {}, h('p', { class: 'muted' }, `Voted for @${u}`), h('p', {}, vs.length ? vs.join(', ') : 'Nobody'));
+      })));
+    }
+  }
+  paintVotes();
+  root.append(votePanel);
+  const onVotes = (e) => { if (e.detail === b.id) paintVotes(); };
+  window.addEventListener('bbx-votes', onVotes); scope.add(() => window.removeEventListener('bbx-votes', onVotes));
+
+  if (b.status === 'active' && isParticipant && b.turn && b.turn !== ME) {
+    root.append(h('div', { class: 'tools' },
+      h('span', { class: 'muted' }, `Preview control: @${b.turn} replies now instead of within 24 hours.`),
+      h('button', { type: 'button', class: 'btn-line', onclick: () => {
+        const u = b.turn, round = Math.floor(b.subs.length / 2) + 1;
+        b.subs.push({ user: u, round, key: `${b.id}-${u}-${round}` }); afterSubmit(b); renderMain();
+      } }, `Get @${b.turn}’s round`)));
+  }
+
+  if (b.status === 'voting') {
+    root.append(h('div', { class: 'tools' },
+      h('span', { class: 'muted' }, 'Preview control: skip the wait and close voting now.' + (isParticipant ? ' Sample voters will weigh in first.' : '')),
+      h('button', { type: 'button', class: 'btn-line', onclick: () => {
+        if (isParticipant) {
+          const used = new Set(b.votes.map((v) => v.voter)), pool = VOTERS.filter((v) => !used.has(v));
+          const n = 6 + Math.floor(Math.random() * 9);
+          for (let i = 0; i < n && i < pool.length; i++) b.votes.push({ voter: pool[i], for: Math.random() < 0.5 ? b.a : b.b });
+        }
+        finalize(b); renderMain();
+      } }, 'Close voting now')));
+  }
+  return root;
+}
+
+/* ============================================================
+   Recorder: voice processing off, raw PCM, WAV, live meters
+   ============================================================ */
+const WORKLET = `
+class BbxRecorder extends AudioWorkletProcessor {
+  constructor() { super(); this.batch = 4096; this.rec = false; this.bufs = null; this.filled = 0;
+    this.port.onmessage = (e) => {
+      if (e.data.type === 'start') { this.rec = true; this.bufs = null; this.filled = 0; }
+      else if (e.data.type === 'stop') { this.flush(); this.rec = false; this.port.postMessage({ type: 'stopped' }); }
+    };
+  }
+  flush() { if (!this.bufs || !this.filled) return; const c = this.bufs.map((b) => b.slice(0, this.filled));
+    this.port.postMessage({ type: 'chunk', chans: c }, c.map((x) => x.buffer)); this.bufs = null; this.filled = 0; }
+  process(inputs) { const inp = inputs[0]; if (!this.rec || !inp || !inp.length) return true;
+    if (!this.bufs) this.bufs = inp.map(() => new Float32Array(this.batch));
+    const n = inp[0].length; for (let c = 0; c < this.bufs.length; c++) this.bufs[c].set(inp[c] || inp[0], this.filled);
+    this.filled += n; if (this.filled + n > this.batch) this.flush(); return true; }
+}
+registerProcessor('bbx-recorder', BbxRecorder);`;
+
+async function makeCapture(ctx, src, ch, onChunk) {
+  const sink = new GainNode(ctx, { gain: 0 }); sink.connect(ctx.destination);
+  try {
+    const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
+    try { await ctx.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+    let waiter = null;
+    const node = new AudioWorkletNode(ctx, 'bbx-recorder', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: ch, channelCountMode: 'explicit', channelInterpretation: 'discrete' });
+    node.port.onmessage = (e) => { if (e.data.type === 'chunk') onChunk(e.data.chans); else if (e.data.type === 'stopped' && waiter) { waiter(); waiter = null; } };
+    src.connect(node); node.connect(sink);
+    return { start: () => node.port.postMessage({ type: 'start' }), stop: () => new Promise((r) => { waiter = r; node.port.postMessage({ type: 'stop' }); }) };
+  } catch (e) {
+    // Fallback where worklet modules can't load: still raw PCM, just on the main thread.
+    const sp = ctx.createScriptProcessor(4096, ch, 1); let rec = false;
+    sp.onaudioprocess = (ev) => { if (!rec) return; const c = []; for (let i = 0; i < ch; i++) c.push(new Float32Array(ev.inputBuffer.getChannelData(i))); onChunk(c); };
+    src.connect(sp); sp.connect(sink);
+    return { start: () => { rec = true; }, stop: () => { rec = false; return Promise.resolve(); } };
+  }
+}
+
+function micError(err) {
+  const n = err && err.name;
+  if (n === 'NotAllowedError' || n === 'SecurityError')
+    return 'Microphone access is blocked. If this preview is showing inside another page, open it in its own tab, or switch to Upload a file.';
+  if (n === 'NotFoundError') return 'No microphone was found. Plug one in and try again.';
+  if (n === 'NotReadableError') return 'Another app is using the microphone. Close it and try again.';
+  if (n === 'Unsupported') return 'This browser can’t record here. Switch to Upload a file.';
+  return 'The microphone couldn’t start. Try again, or switch to Upload a file.';
+}
+
+function makeRecorder({ maxSeconds, onSubmit, scope, submitLabel }) {
+  const root = h('div', { class: 'rec' });
+  const S = { mode: 'record', status: 'idle', error: null, warnings: [], take: null, upTake: null, upBusy: false, upErr: null, countdown: null, submitting: false, subErr: null };
+  let stream = null, actx = null, cap = null, aFull = null, aSub = null, chunks = [], frames = 0, meterRaf = 0, timer = 0, cdTimer = 0, takePlayer = null, clipUntil = 0;
+  let refs = {};
+
+  function releaseMic() {
+    cancelAnimationFrame(meterRaf); clearInterval(timer); clearTimeout(cdTimer);
+    if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null;
+    if (actx) actx.close().catch(() => {}); actx = null; cap = null; aFull = aSub = null;
+  }
+  scope.add(() => { releaseMic(); if (takePlayer) takePlayer.destroy(); });
+
+  async function prepare() {
+    S.status = 'requesting'; S.error = null; render();
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error(), { name: 'Unsupported' });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false,
+        channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 24 } } });
+      const track = stream.getAudioTracks()[0], s = track.getSettings(), w = [];
+      if (s.noiseSuppression) w.push('Your browser kept noise suppression on. It strips sustained bass; Chrome or Firefox on desktop usually let us turn it off.');
+      if (s.autoGainControl) w.push('Your browser kept automatic gain on. Expect the volume to duck after heavy bass hits.');
+      if (s.echoCancellation) w.push('Echo cancellation is still on. Headphones reduce how much it interferes.');
+      if (/hands-?free|headset|airpods|bluetooth/i.test(track.label)) w.push('This looks like a Bluetooth headset mic. Bluetooth call audio drops almost all low end; use a wired or USB mic.');
+      S.warnings = w;
+      actx = new AudioContext(s.sampleRate ? { sampleRate: s.sampleRate } : {});
+      const src = actx.createMediaStreamSource(stream);
+      cap = await makeCapture(actx, src, Math.min(2, Math.max(1, s.channelCount || 1)), onChunk);
+      aFull = new AnalyserNode(actx, { fftSize: 2048 }); aSub = new AnalyserNode(actx, { fftSize: 4096 });
+      src.connect(aFull);
+      src.connect(new BiquadFilterNode(actx, { type: 'lowpass', frequency: SUB_HZ, Q: Math.SQRT1_2 }))
+        .connect(new BiquadFilterNode(actx, { type: 'lowpass', frequency: SUB_HZ, Q: Math.SQRT1_2 })).connect(aSub);
+      S.status = 'ready'; render(); meters();
+    } catch (err) { releaseMic(); S.status = 'error'; S.error = micError(err); render(); }
+  }
+
+  function onChunk(c) {
+    chunks.push(c); frames += c[0].length;
+    if (S.status === 'recording' && actx && frames >= maxSeconds * actx.sampleRate) stop();
+  }
+
+  function meters() {
+    cancelAnimationFrame(meterRaf);
+    const buf = new Float32Array(4096);
+    const loop = () => {
+      if (!aFull || !aSub) return;
+      const a = buf.subarray(0, aFull.fftSize); aFull.getFloatTimeDomainData(a);
+      let s = 0, pk = 0; for (let i = 0; i < a.length; i++) { s += a[i] * a[i]; pk = Math.max(pk, Math.abs(a[i])); }
+      const b2 = buf.subarray(0, aSub.fftSize); aSub.getFloatTimeDomainData(b2);
+      let ss = 0; for (let i = 0; i < b2.length; i++) ss += b2[i] * b2[i];
+      const db = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity), frac = (d) => Math.max(0, Math.min(1, (d + 66) / 60));
+      if (refs.full) refs.full.style.transform = `scaleX(${frac(db(Math.sqrt(s / a.length)))})`;
+      if (refs.sub) refs.sub.style.transform = `scaleX(${frac(db(Math.sqrt(ss / b2.length)))})`;
+      const now = performance.now(); if (pk > 0.966) clipUntil = now + 1500;
+      if (refs.clip) refs.clip.style.visibility = now < clipUntil ? 'visible' : 'hidden';
+      meterRaf = requestAnimationFrame(loop);
+    };
+    meterRaf = requestAnimationFrame(loop);
+  }
+
+  function countdown(n) {
+    S.countdown = n; paintClock();
+    if (n === 0) { S.countdown = null; start(); return; }
+    cdTimer = setTimeout(() => countdown(n - 1), 1000);
+  }
+  async function start() {
+    await actx.resume(); chunks = []; frames = 0; cap.start(); S.status = 'recording'; render();
+    timer = setInterval(paintClock, 100);
+  }
+  function paintClock() {
+    if (!refs.clock) return;
+    const el = actx ? (frames / actx.sampleRate) : 0;
+    refs.clock.textContent = S.countdown != null ? `Starting in ${S.countdown}` : `${fmtTime(el)} / ${fmtTime(maxSeconds)}`;
+    if (refs.prog) refs.prog.style.width = `${Math.min(1, el / maxSeconds) * 100}%`;
+  }
+  async function stop() {
+    if (S.status !== 'recording') return;
+    S.status = 'processing'; clearInterval(timer); render();
+    await cap.stop();
+    try {
+      const sr = actx.sampleRate, max = Math.floor(maxSeconds * sr), ch = chunks[0] ? chunks[0].length : 0;
+      const total = Math.min(max, chunks.reduce((n, c) => n + c[0].length, 0));
+      if (!ch || total < sr) throw new Error('That take is under a second long. Record again.');
+      const out = Array.from({ length: ch }, () => new Float32Array(total)); let o = 0;
+      for (const c of chunks) { const n = Math.min(c[0].length, total - o); if (n <= 0) break; for (let i = 0; i < ch; i++) out[i].set(c[i].subarray(0, n), o); o += n; }
+      chunks = [];
+      const buffer = new AudioBuffer({ length: total, numberOfChannels: ch, sampleRate: sr });
+      out.forEach((c, i) => buffer.copyToChannel(c, i));
+      const analysis = await analyze(buffer);
+      S.take = { url: URL.createObjectURL(encodeWav(out, sr, 24)), buffer, analysis, lossless: true, format: `WAV, ${sr / 1000} kHz 24-bit`, channels: ch };
+      S.status = 'done';
+    } catch (err) { S.error = err.message; S.status = 'ready'; }
+    render();
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    S.upErr = null; S.upTake = null;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const types = { wav: ['WAV', true], flac: ['FLAC', true], mp3: ['MP3', false], m4a: ['AAC', false], aac: ['AAC', false] };
+    if (!types[ext]) { S.upErr = 'Upload a WAV, FLAC, MP3 or M4A file.'; render(); return; }
+    S.upBusy = true; render();
+    try {
+      const buffer = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(await file.arrayBuffer());
+      if (buffer.duration > maxSeconds + 0.5) throw new Error(`This file is ${fmtTime(buffer.duration)} long. Rounds here are ${maxSeconds} seconds max; trim it and upload again.`);
+      const analysis = await analyze(buffer);
+      S.upTake = { url: URL.createObjectURL(file), buffer, analysis, lossless: types[ext][1], format: types[ext][1] ? types[ext][0] : `${types[ext][0]} (compressed file)`, channels: buffer.numberOfChannels };
+    } catch (err) { S.upErr = err.message && err.message.startsWith('This file') ? err.message : 'This file couldn’t be read. Export it again as WAV and retry.'; }
+    S.upBusy = false; render();
+  }
+
+  function render() {
+    if (takePlayer) { takePlayer.destroy(); takePlayer = null; }
+    refs = {}; root.innerHTML = '';
+    const tabs = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'How to add your round' },
+      [['record', 'Record'], ['upload', 'Upload a file']].map(([m, t]) =>
+        h('button', { type: 'button', role: 'tab', 'aria-selected': String(S.mode === m), onclick: () => { S.mode = m; render(); } }, t)));
+    root.append(tabs);
+    const take = S.mode === 'record' ? S.take : S.upTake;
+
+    if (S.mode === 'record' && !take) {
+      if (['idle', 'error', 'requesting'].includes(S.status)) {
+        root.append(h('p', { class: 'muted', style: 'max-width:62ch' }, 'Your browser’s voice filters get switched off so your low end is recorded as it is. Use headphones if you’ll play a beat while recording.'),
+          h('button', { type: 'button', class: 'btn', style: 'justify-self:start', disabled: S.status === 'requesting', onclick: prepare }, S.status === 'requesting' ? 'Waiting for permission…' : 'Turn on microphone'));
+      }
+      if (S.status === 'ready' || S.status === 'recording') {
+        refs.full = h('div', { class: 'fill full' }); refs.sub = h('div', { class: 'fill sub' });
+        refs.clip = h('p', { class: 'clip', style: 'visibility:hidden', role: 'status' }, 'Clipping. Move back from the mic or turn your interface gain down.');
+        root.append(h('div', { class: 'meters' },
+          h('div', { class: 'meter' }, h('span', { class: 'muted' }, 'Input level'), h('div', { class: 'track', 'aria-hidden': 'true' }, refs.full)),
+          h('div', { class: 'meter' }, h('span', { class: 'muted' }, 'Sub-bass, below 100 Hz'), h('div', { class: 'track', 'aria-hidden': 'true' }, refs.sub)),
+          refs.clip));
+        if (S.warnings.length) root.append(h('div', { class: 'warn' }, S.warnings.map((w) => h('p', {}, w))));
+        refs.clock = h('p', { class: 'num clock', 'aria-live': 'polite' });
+        refs.prog = h('div');
+        const recording = S.status === 'recording';
+        root.append(h('div', { class: 'recrow' },
+          h('button', { type: 'button', class: 'recbtn' + (recording ? ' stop' : ''), 'aria-label': recording ? 'Stop recording' : 'Start recording', disabled: S.countdown != null,
+            onclick: () => (recording ? stop() : countdown(3)) }, h('span')),
+          h('div', { style: 'flex:1;min-width:12rem;display:grid;gap:.4rem' }, refs.clock, h('div', { class: 'prog', 'aria-hidden': 'true' }, refs.prog),
+            h('p', { class: 'small muted' }, `Recording stops by itself at ${maxSeconds} seconds.`))));
+        paintClock();
+      }
+      if (S.status === 'processing') root.append(h('p', { role: 'status' }, 'Preparing your take…'));
+      if (S.error) root.append(h('p', { class: 'err', role: 'alert' }, S.error));
+    }
+
+    if (S.mode === 'upload' && !take) {
+      const input = h('input', { type: 'file', accept: '.wav,.flac,.mp3,.m4a,.aac', class: 'sr', onchange: (e) => handleFile(e.target.files[0]) });
+      root.append(h('label', { class: 'drop' }, h('span', { style: 'font-size:1.1rem' }, 'Choose an audio file'),
+        h('span', { class: 'small muted', style: 'max-width:56ch' }, `WAV or FLAC keeps every bit of your bass. MP3 and M4A work too, but anything their encoder already removed can’t come back. Up to ${maxSeconds} seconds.`), input));
+      if (S.upBusy) root.append(h('p', { role: 'status' }, 'Reading your file…'));
+      if (S.upErr) root.append(h('p', { class: 'err', role: 'alert' }, S.upErr));
+    }
+
+    if (take) {
+      takePlayer = wavePlayer({ src: take.url, analysis: take.analysis, label: 'your take' });
+      const a = take.analysis;
+      root.append(takePlayer.el,
+        h('dl', { class: 'specs' },
+          h('div', {}, h('dt', {}, 'Length'), h('dd', { class: 'num' }, fmtTime(a.durationMs / 1000))),
+          h('div', {}, h('dt', {}, 'Format'), h('dd', {}, `${take.format}, ${take.channels === 2 ? 'stereo' : 'mono'}`)),
+          h('div', {}, h('dt', {}, 'Sub-bass share'), h('dd', { class: 'num', style: 'color:var(--sub)' }, `${Math.round(a.subRatio * 100)}%`)),
+          h('div', {}, h('dt', {}, 'Loudness / peak'), h('dd', { class: 'num' }, `${fmtDb(a.lufs, 'LUFS')} / ${fmtDb(a.peakDb, 'dBFS')}`))));
+      if (!take.lossless) root.append(h('p', { class: 'small muted' }, 'This is a compressed file. It will be stored exactly as uploaded, with no second round of compression.'));
+      if (S.subErr) root.append(h('p', { class: 'err', role: 'alert' }, S.subErr));
+      root.append(h('div', { class: 'row-btns' },
+        h('button', { type: 'button', class: 'btn', disabled: S.submitting, onclick: async () => {
+          S.submitting = true; render();
+          try { await onSubmit(take); } catch (err) { S.subErr = 'The round wasn’t submitted. Try again.'; S.submitting = false; render(); }
+        } }, S.submitting ? 'Submitting…' : submitLabel),
+        h('button', { type: 'button', class: 'btn-line', disabled: S.submitting, onclick: () => {
+          if (S.mode === 'record') { S.take = null; S.status = actx ? 'ready' : 'idle'; } else S.upTake = null; render();
+        } }, S.mode === 'record' ? 'Record again' : 'Choose another file')));
+    }
+  }
+  render();
+  return root;
+}
+
+/* ============================================================
+   Stats helpers
+   ============================================================ */
+function statsOf(u) {
+  return history.filter((r) => r.a === u || r.b === u).map((r) => {
+    const isA = r.a === u;
+    return {
+      r, opp: isA ? r.b : r.a, delta: isA ? r.dA : r.dB, elo: isA ? r.eloA : r.eloB,
+      mine: isA ? r.votesA : r.votesB, theirs: isA ? r.votesB : r.votesA,
+      outcome: r.result === 'draw' ? 'D' : r.winner === u ? 'W' : 'L',
+    };
+  });
+}
+const listedProfiles = () => profiles.filter((p) => p.u !== ME || battlesOf(p) > 0);
+function ranks() { return new Map([...listedProfiles()].sort((a, b) => b.elo - a.elo).map((p, i) => [p.u, i + 1])); }
+function fmtAgo(ts) {
+  const d = Math.floor((Date.now() - ts) / DAY);
+  if (d < 1) return 'today'; if (d === 1) return 'yesterday'; if (d < 30) return `${d} days ago`;
+  const m = Math.round(d / 30.4); if (m < 12) return m === 1 ? 'a month ago' : `${m} months ago`;
+  const y = Math.round(d / 365); return y === 1 ? 'a year ago' : `${y} years ago`;
+}
+const fmtDate = (ts) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtMonth = (ts) => new Date(ts).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const OUTCOME_WORD = { W: 'Won', L: 'Lost', D: 'Drew' };
+function resultText(g) {
+  if (g.r.result === 'forfeit') return g.outcome === 'W' ? 'Won by forfeit' : 'Lost by forfeit';
+  return g.outcome === 'D' ? 'Draw' : `${OUTCOME_WORD[g.outcome]} by decision`;
+}
+function formStrip(games, n = 5) {
+  const recent = games.slice(-n).reverse();
+  return h('ol', { class: 'form', 'aria-label': `Last ${recent.length} results, newest first: ${recent.map((g) => OUTCOME_WORD[g.outcome].toLowerCase()).join(', ')}` },
+    recent.map((g) => h('li', { class: 'f-' + g.outcome, title: `${resultText(g)} against @${g.opp}`, 'aria-hidden': 'true' }, g.outcome)));
+}
+function streakOf(games) {
+  if (!games.length) return null;
+  const kind = games[games.length - 1].outcome; let n = 0;
+  for (let i = games.length - 1; i >= 0 && games[i].outcome === kind; i--) n++;
+  const word = kind === 'W' ? (n === 1 ? 'win' : 'wins') : kind === 'L' ? (n === 1 ? 'loss' : 'losses') : (n === 1 ? 'draw' : 'draws');
+  return `${n} ${word}`;
+}
+function lastBattleLine(g) {
+  const verb = g.outcome === 'W' ? 'Beat' : g.outcome === 'L' ? 'Lost to' : 'Drew with';
+  const score = g.r.result === 'forfeit' ? 'by forfeit' : `${g.mine}–${g.theirs}`;
+  return h('p', { class: 'small' }, h('span', { class: 'muted' }, 'Last battle: '), `${verb} @${g.opp}, ${score}, ${fmtAgo(g.r.date)}`);
+}
+const avatar = (p, cls = '') => h('span', { class: 'avatar ' + cls, 'aria-hidden': 'true' }, p.u[0].toUpperCase());
+
+/* ============================================================
+   Directory
+   ============================================================ */
+function card(p, rank) {
+  const games = statsOf(p.u), n = battlesOf(p), rate = n ? Math.round((p.w / n) * 100) : null, provisional = n < 20;
+  const last = games[games.length - 1];
+  return h('article', { class: 'card' },
+    h('header', {},
+      avatar(p),
+      h('div', { class: 'id' },
+        h('h3', { class: 'handle' }, profileLink(p.u)),
+        h('p', { class: 'muted' }, p.name),
+        p.c ? h('p', { class: 'small muted' }, h('span', { 'aria-hidden': 'true' }, flag(p.c) + ' '), countryName(p.c)) : null),
+      h('div', { class: 'elo' }, h('p', { class: 'num' }, p.elo), h('p', { class: 'small muted', style: 'margin-top:.25rem' }, provisional ? 'Provisional' : `Rank ${rank}`))),
+    h('div', { style: 'display:grid;gap:.45rem' },
+      h('p', { class: 'record num' },
+        h('span', {}, h('span', { class: 'up' }, p.w), ' won'), h('span', {}, h('span', { class: 'down' }, p.l), ' lost'),
+        p.d ? h('span', {}, `${p.d} drawn`) : null, rate != null ? h('span', { class: 'rate' }, `${rate}% win rate`) : null),
+      rate != null ? h('div', { class: 'winbar', 'aria-hidden': 'true' }, h('div', { style: `width:${rate}%` })) : null),
+    games.length ? h('div', { class: 'cardrow' }, h('span', { class: 'small muted' }, 'Recent form'), formStrip(games)) : null,
+    last ? lastBattleLine(last) : h('p', { class: 'small muted' }, 'No finished battles yet.'),
+    h('button', { type: 'button', class: 'btn-line', onclick: () => go('profile', { profile: p.u }) }, 'See stats and battles'));
+}
+
+function viewDirectory(scope) {
+  const f = state.filters;
+  const countries = [...new Set(listedProfiles().map((p) => p.c).filter(Boolean))].sort((a, b) => countryName(a).localeCompare(countryName(b)));
+  const count = h('p', { class: 'muted' });
+  const grid = h('ul', { class: 'grid' });
+  const winRate = (p) => (battlesOf(p) ? p.w / battlesOf(p) : -1);
+  const SORTS = {
+    rating: (a, b) => b.elo - a.elo,
+    battles: (a, b) => battlesOf(b) - battlesOf(a),
+    winrate: (a, b) => winRate(b) - winRate(a),
+    name: (a, b) => a.u.localeCompare(b.u),
+  };
+
+  function paint() {
+    grid.innerHTML = '';
+    const rankOf = ranks(), q = f.q.trim().toLowerCase();
+    const rows = listedProfiles()
+      .filter((p) => (!q || p.u.includes(q) || p.name.toLowerCase().includes(q)) && (!f.country || p.c === f.country))
+      .sort(SORTS[f.sort] || SORTS.rating);
+    count.textContent = `${rows.length} ${rows.length === 1 ? 'artist' : 'artists'}${q || f.country ? ' match your filters' : ' on the board'}`;
+    if (!rows.length) {
+      grid.append(h('li', { class: 'empty', style: 'grid-column:1/-1' }, h('span', {}, 'No beatboxers match these filters. ',
+        h('button', { type: 'button', class: 'btn-line', style: 'margin-left:.5rem', onclick: () => { Object.assign(f, { q: '', country: '' }); renderMain(); } }, 'Clear filters'))));
+      return;
+    }
+    rows.forEach((p) => grid.append(h('li', {}, card(p, rankOf.get(p.u)))));
+  }
+
+  const sel = (key, options) => {
+    const s = h('select', { onchange: (e) => { f[key] = e.target.value; paint(); } }, options.map(([v, t]) => h('option', { value: v }, t)));
+    s.value = f[key]; return s;
+  };
+  const root = h('div', {},
+    h('header', { class: 'dirhead stack', style: 'gap:.5rem' }, h('h1', {}, 'Beatboxers'), count),
+    h('div', { class: 'filters', role: 'search' },
+      h('label', {}, 'Name or handle', h('input', { type: 'search', placeholder: 'Search', value: f.q, oninput: (e) => { f.q = e.target.value; paint(); } })),
+      h('label', {}, 'Country', sel('country', [['', 'Anywhere'], ...countries.map((c) => [c, countryName(c)])])),
+      h('label', {}, 'Sort by', sel('sort', [['rating', 'Highest rated'], ['battles', 'Most battles'], ['winrate', 'Best win rate'], ['name', 'Handle A to Z']]))),
+    grid);
+  paint();
+  return root;
+}
+
+/* ============================================================
+   Profile
+   ============================================================ */
+function ratingChart(p, games) {
+  const vals = [1200, ...games.map((g) => g.elo)];
+  const min = Math.min(...vals), max = Math.max(...vals), pad = Math.max(12, (max - min) * 0.08), lo = min - pad, hi = max + pad;
+  const W = 600, H = 160, x = (i) => (i / (vals.length - 1)) * W, y = (v) => H - ((v - lo) / (hi - lo)) * H;
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+    aria-label="Rating went from 1200 to ${p.elo} over ${games.length} battles, peaking at ${p.peak}">
+    <path class="area" d="${line}L${W},${H}L0,${H}Z"/>
+    <line class="peak" x1="0" x2="${W}" y1="${y(p.peak).toFixed(1)}" y2="${y(p.peak).toFixed(1)}" vector-effect="non-scaling-stroke"/>
+    <path class="line" d="${line}" vector-effect="non-scaling-stroke"/></svg>`;
+  return h('div', { class: 'chartwrap' },
+    h('div', { class: 'ylab num', 'aria-hidden': 'true' }, h('span', {}, max), h('span', {}, min)),
+    h('div', { html: svg }),
+    h('div', { class: 'xlab', 'aria-hidden': 'true' }, h('span', {}, fmtDate(games[0].r.date)), h('span', {}, 'Latest battle')));
+}
+
+function viewProfile(p) {
+  if (!p) return h('p', {}, 'This beatboxer doesn’t exist.');
+  const games = statsOf(p.u), n = battlesOf(p), rate = n ? Math.round((p.w / n) * 100) : null;
+  const rankOf = ranks(), provisional = n < 20;
+
+  // Head-to-head
+  const opp = new Map();
+  for (const g of games) {
+    const o = opp.get(g.opp) || { u: g.opp, n: 0, W: 0, L: 0, D: 0, last: null };
+    o.n++; o[g.outcome]++; o.last = g; opp.set(g.opp, o);
+  }
+  const opponents = [...opp.values()].sort((a, b) => b.n - a.n || b.last.r.date - a.last.r.date);
+  const top = opponents[0];
+
+  const root = h('article', { class: 'profile', 'aria-label': `@${p.u} profile` },
+    h('button', { type: 'button', class: 'back', onclick: () => go('directory') }, 'Back to all beatboxers'),
+    h('header', { class: 'phead' },
+      avatar(p, 'lg'),
+      h('div', { style: 'min-width:0' },
+        h('h1', { class: 'handle' }, `@${p.u}`),
+        h('p', { class: 'facts' },
+          h('span', {}, p.name),
+          p.c ? h('span', {}, h('span', { 'aria-hidden': 'true' }, flag(p.c) + ' '), countryName(p.c)) : null,
+          h('span', {}, `Joined ${fmtMonth(p.joined)}`)))));
+
+  const tiles = [
+    ['Rating', p.elo, 'num', provisional ? 'Provisional until 20 battles' : `Rank ${rankOf.get(p.u)} of ${rankOf.size}`],
+    ['Peak rating', p.peak, 'num', p.peak === p.elo && n ? 'Currently at peak' : null],
+    ['Battles', n, 'num', null],
+    ['Won, lost, drawn', `${p.w}–${p.l}–${p.d}`, 'num', null],
+    ['Win rate', rate != null ? `${rate}%` : '—', 'num', null],
+    ['Current streak', streakOf(games) || '—', 'text', null],
+    ['Forfeits', p.forfeits, 'num', 'Missed response windows'],
+    ['Most faced', top ? `@${top.u}` : '—', 'text', top ? `${top.n} ${top.n === 1 ? 'battle' : 'battles'}, ${top.W}–${top.L}–${top.D}` : null],
+  ];
+  root.append(h('dl', { class: 'statgrid' }, tiles.map(([label, value, kind, note]) =>
+    h('div', {}, h('dt', {}, label), h('dd', { class: kind }, value), note ? h('p', { class: 'note' }, note) : null))));
+
+  const live = battles.filter((b) => (b.a === p.u || b.b === p.u) && ['active', 'voting', 'scheduled', 'live'].includes(b.status));
+  if (live.length) {
+    root.append(h('section', { class: 'psec' }, h('h2', {}, 'In progress'),
+      live.map((b) => {
+        const other = b.a === p.u ? b.b : b.a;
+        const what = b.status === 'scheduled' ? 'Live battle, starting soon' : b.status === 'live' ? 'Live now' : b.status === 'voting' ? 'Voting open' : b.turn === p.u ? `@${p.u}’s turn` : `@${other}’s turn`;
+        return h('div', { class: 'inprog' }, h('p', {}, `Against @${other}`, h('span', { class: 'muted' }, `. ${what}.`)),
+          h('button', { type: 'button', class: 'btn-line', onclick: () => go('battles', { battleId: b.id }) }, 'Open battle'));
+      })));
+  }
+
+  if (!games.length) {
+    root.append(h('div', { class: 'empty' }, p.u === ME
+      ? 'No finished battles yet. Your battle with @paz.subs is waiting for your round.'
+      : 'No finished battles yet.'));
+    return root;
+  }
+
+  root.append(h('section', { class: 'psec' }, h('h2', {}, 'Rating over time'), ratingChart(p, games),
+    h('p', { class: 'small muted' }, 'Dashed line marks the peak rating.')));
+
+  root.append(h('section', { class: 'psec' }, h('h2', {}, `Opponents (${opponents.length})`),
+    h('div', { class: 'tablewrap' }, h('table', { class: 'data' },
+      h('thead', {}, h('tr', {}, ['Opponent', 'Battles', 'Won', 'Lost', 'Drawn', 'Last met'].map((t, i) => h('th', { scope: 'col', class: i && i < 5 ? 'n' : '' }, t)))),
+      h('tbody', {}, opponents.map((o) => h('tr', {},
+        h('td', {}, profileLink(o.u)),
+        h('td', { class: 'n num' }, o.n), h('td', { class: 'n num up' }, o.W), h('td', { class: 'n num down' }, o.L), h('td', { class: 'n num' }, o.D),
+        h('td', {}, `${resultText(o.last)}, ${fmtAgo(o.last.r.date)}`))))))));
+
+  const all = [...games].reverse(), PAGE = 10;
+  const tbody = h('tbody');
+  const more = h('div');
+  const paintHistory = (limit) => {
+    tbody.innerHTML = '';
+    all.slice(0, limit).forEach((g) => tbody.append(h('tr', {},
+      h('td', { style: 'white-space:nowrap' }, fmtDate(g.r.date)),
+      h('td', {}, profileLink(g.opp)),
+      h('td', { class: g.outcome === 'W' ? 'up' : g.outcome === 'L' ? 'down' : '' }, resultText(g)),
+      h('td', { class: 'n num' }, g.r.result === 'forfeit' ? '—' : `${g.mine}–${g.theirs}`),
+      h('td', { class: 'n num' }, h('span', { class: g.delta >= 0 ? 'up' : 'down' }, signed(g.delta)), h('span', { class: 'muted' }, ` to ${g.elo}`)))));
+    more.innerHTML = '';
+    if (limit < all.length) more.append(h('button', { type: 'button', class: 'btn-line', onclick: () => paintHistory(all.length) }, `Show all ${all.length} battles`));
+  };
+  paintHistory(PAGE);
+  root.append(h('section', { class: 'psec' }, h('h2', {}, 'Battle history'),
+    h('div', { class: 'tablewrap' }, h('table', { class: 'data' },
+      h('thead', {}, h('tr', {}, ['Date', 'Opponent', 'Result', 'Votes', 'Rating change'].map((t, i) => h('th', { scope: 'col', class: i >= 3 ? 'n' : '' }, t)))),
+      tbody)), more));
+  return root;
+}
+
+renderMain();
+</script>
+</body>
+</html>
